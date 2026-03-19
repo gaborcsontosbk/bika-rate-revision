@@ -1,0 +1,1720 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Freight Rate Revision Tool — BI-KA</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Syne:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #e9e9e9;
+  --surface: #ffffff;
+  --surface2: #f4f4f4;
+  --border: #d0d0d0;
+  --border2: #b8b8b8;
+  --accent: #ec1b24;
+  --accent-bg: #fff0f0;
+  --accent-border: rgba(236,27,36,.28);
+  --text: #050a31;
+  --text2: #3a3f5c;
+  --text3: #6b7280;
+  --green: #1a8a4a;
+  --green-bg: #edfaf3;
+  --red: #c0392b;
+  --red-bg: #fdf2f2;
+  --blue: #1a6bb5;
+  --blue-bg: #edf5ff;
+  --mono: 'DM Mono', monospace;
+  --sans: 'Syne', sans-serif;
+  --body: 'Inter', sans-serif;
+  --radius: 7px;
+  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.1);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--body); font-size: 14px; min-height: 100vh; }
+
+/* HEADER */
+header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 28px; display: flex; align-items: center; justify-content: space-between; height: 52px; box-shadow: var(--shadow); }
+.logo { font-family: var(--sans); font-weight: 800; font-size: 17px; color: var(--accent); letter-spacing: .03em; }
+.logo span { color: var(--text3); font-family: var(--body); font-weight: 400; font-size: 13px; margin-left: 10px; }
+.hbadge { font-family: var(--mono); font-size: 11px; color: var(--text3); border: 1px solid var(--border2); padding: 3px 10px; border-radius: 20px; background: var(--surface2); }
+
+/* LAYOUT */
+.app { display: grid; grid-template-columns: 400px 1fr; min-height: calc(100vh - 52px); }
+
+/* SIDEBAR */
+.sidebar { background: var(--surface); border-right: 1px solid var(--border); overflow-y: auto; max-height: calc(100vh - 52px); }
+.tab-nav { display: flex; border-bottom: 2px solid var(--border); position: sticky; top: 0; background: var(--surface); z-index: 20; }
+.tab-btn { flex: 1; padding: 13px 6px; background: none; border: none; color: var(--text3); font-family: var(--body); font-weight: 600; font-size: 12px; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all .18s; }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-btn:hover:not(.active) { color: var(--text2); background: var(--bg); }
+.tab-panel { display: none; padding: 20px; }
+.tab-panel.active { display: block; }
+
+/* FORM ELEMENTS */
+.stitle { font-family: var(--body); font-size: 11px; font-weight: 600; letter-spacing: .08em; color: var(--text3); text-transform: uppercase; margin-bottom: 12px; margin-top: 2px; padding-bottom: 7px; border-bottom: 1px solid var(--border); }
+.field { margin-bottom: 13px; }
+.field label { display: block; font-size: 13px; color: var(--text2); margin-bottom: 5px; font-weight: 500; }
+.field input, .field select, .field textarea {
+  width: 100%; background: var(--surface); border: 1.5px solid var(--border2);
+  border-radius: var(--radius); color: var(--text); font-family: var(--body);
+  font-size: 13px; padding: 8px 10px; outline: none; transition: border-color .15s, box-shadow .15s;
+}
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(236,27,36,.12); }
+.field textarea { resize: vertical; min-height: 56px; }
+.field select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238a96a8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 30px; appearance: none; }
+.field input[type=number] { font-family: var(--mono); }
+.field input[readonly] { background: var(--surface2); cursor: default; }
+.frow { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.frow3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+/* BADGES */
+.badge { font-family: var(--mono); font-size: 11px; padding: 2px 8px; border-radius: 20px; display: inline-block; font-weight: 500; }
+.badge-up { background: var(--red-bg); color: var(--red); border: 1px solid rgba(192,57,43,.2); }
+.badge-dn { background: var(--green-bg); color: var(--green); border: 1px solid rgba(26,138,74,.2); }
+.badge-neu { background: var(--surface2); color: var(--text3); border: 1px solid var(--border); }
+.badge-blue { background: var(--blue-bg); color: var(--blue); border: 1px solid rgba(26,107,181,.2); }
+
+/* BUTTONS */
+.btn-ghost { background: var(--surface); border: 1.5px solid var(--border2); color: var(--text2); font-size: 12px; padding: 6px 12px; border-radius: var(--radius); font-family: var(--body); font-weight: 500; cursor: pointer; transition: all .15s; }
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+.btn-primary { background: var(--accent); border: none; color: #fff; font-size: 14px; padding: 10px 24px; border-radius: var(--radius); font-family: var(--sans); font-weight: 700; cursor: pointer; transition: all .15s; letter-spacing: .02em; }
+.btn-primary:hover { background: #c07008; }
+.add-row-btn { background: none; border: 1.5px dashed var(--border2); color: var(--text3); font-family: var(--body); font-size: 12px; font-weight: 500; padding: 7px; border-radius: var(--radius); cursor: pointer; width: 100%; margin-top: 4px; transition: all .2s; }
+.add-row-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+.del-btn { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 16px; line-height: 1; padding: 0 2px; transition: color .15s; }
+.del-btn:hover { color: var(--red); }
+
+/* INFO BOXES */
+.info-box { background: var(--blue-bg); border: 1px solid rgba(26,107,181,.2); border-radius: var(--radius); padding: 10px 12px; font-size: 12px; color: var(--text2); margin-bottom: 12px; line-height: 1.55; }
+.warn-box { background: var(--accent-bg); border: 1px solid var(--accent-border); border-radius: var(--radius); padding: 10px 12px; font-size: 12px; color: #8a5c00; margin-bottom: 12px; line-height: 1.55; }
+.success-box { background: var(--green-bg); border: 1px solid rgba(26,138,74,.25); border-radius: var(--radius); padding: 10px 12px; font-size: 12px; color: var(--green); margin-bottom: 12px; line-height: 1.55; }
+
+/* FUEL TABLE */
+.fuel-hdr { display: grid; grid-template-columns: 1fr 76px 76px 62px 26px; gap: 5px; margin-bottom: 6px; padding: 0 2px; }
+.fuel-hdr span { font-size: 11px; color: var(--text3); font-weight: 600; text-align: right; }
+.fuel-hdr span:first-child { text-align: left; }
+.fuel-row-g { display: grid; grid-template-columns: 1fr 76px 76px 62px 26px; gap: 5px; align-items: center; margin-bottom: 5px; }
+.fuel-row-g input { background: var(--surface2); border: 1.5px solid var(--border); border-radius: 5px; color: var(--text); font-family: var(--mono); font-size: 12px; padding: 6px 7px; outline: none; width: 100%; text-align: right; transition: border-color .15s; }
+.fuel-row-g input:first-child { text-align: left; font-family: var(--body); }
+.fuel-row-g input.eu-val { border-color: rgba(26,107,181,.4); color: var(--blue); background: var(--blue-bg); }
+.fuel-row-g input:focus { border-color: var(--accent) !important; box-shadow: 0 0 0 2px rgba(236,27,36,.1); }
+.delta-cell { font-family: var(--mono); font-size: 12px; text-align: center; font-weight: 500; }
+
+/* BULLETIN BOX */
+.bul-box { background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 14px; }
+.bul-result { font-family: var(--mono); font-size: 12px; color: var(--text2); margin-top: 10px; line-height: 1.8; }
+.bul-result .bv { color: var(--blue); font-weight: 500; }
+.fetch-status { font-size: 11px; margin-top:6px; }
+
+/* DRIVER ITEMS */
+.driver-item { border: 1.5px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; overflow: hidden; box-shadow: var(--shadow); background: var(--surface); transition: border-color .15s; }
+.driver-item.sel { border-color: var(--accent); }
+.driver-hdr { display: flex; align-items: flex-start; gap: 10px; padding: 11px 12px; cursor: pointer; }
+.driver-item.sel .driver-hdr { background: var(--accent-bg); }
+.driver-hdr input[type=checkbox] { accent-color: var(--accent); margin-top: 2px; flex-shrink: 0; width: 15px; height: 15px; }
+.driver-name { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.3; }
+.driver-desc { font-size: 11px; color: var(--text3); margin-top: 3px; line-height: 1.4; }
+.driver-expand { display: none; padding: 12px 12px 12px 37px; border-top: 1px solid var(--border); background: var(--surface2); }
+.driver-item.sel .driver-expand { display: block; }
+
+/* COST SHARE INPUT */
+.cost-share-row { display: grid; grid-template-columns: 1fr 70px; gap: 8px; align-items: center; margin-bottom: 10px; }
+.cost-share-row label { font-size: 12px; color: var(--text2); font-weight: 500; }
+.cost-share-row input { background: var(--surface); border: 1.5px solid var(--border2); border-radius: 5px; color: var(--accent); font-family: var(--mono); font-size: 13px; padding: 5px 8px; outline: none; text-align: right; transition: border-color .15s; }
+.cost-share-row input:focus { border-color: var(--accent); }
+.driver-change-row { display: grid; grid-template-columns: 1fr 70px; gap: 8px; align-items: center; margin-bottom: 6px; }
+.driver-change-row label { font-size: 12px; color: var(--text2); font-weight: 500; }
+.driver-change-row input { background: var(--surface); border: 1.5px solid var(--border2); border-radius: 5px; color: var(--red); font-family: var(--mono); font-size: 13px; padding: 5px 8px; outline: none; text-align: right; }
+.driver-change-row input:focus { border-color: var(--accent); }
+
+/* TONE BTNS */
+.tone-btns { display: flex; gap: 6px; margin-bottom: 12px; }
+.tone-btn { flex: 1; padding: 8px 6px; border-radius: var(--radius); border: 1.5px solid var(--border2); background: var(--surface); color: var(--text3); font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--body); transition: all .15s; }
+.tone-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+
+/* MAIN AREA */
+.main { display: flex; flex-direction: column; overflow-y: auto; max-height: calc(100vh - 52px); }
+.main-hdr { padding: 18px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--surface); }
+.main-title { font-family: var(--sans); font-size: 20px; font-weight: 800; color: var(--text); }
+.main-title span { color: var(--accent); }
+
+/* KPI STRIP */
+.kpi-strip { display: grid; grid-template-columns: repeat(5, 1fr); border-bottom: 2px solid var(--border); background: var(--surface); }
+.kpi-box { padding: 14px 18px; border-right: 1px solid var(--border); }
+.kpi-box:last-child { border-right: none; }
+.kpi-box.highlight { background: var(--accent-bg); border-right-color: var(--accent-border); border-left: 2px solid var(--accent); }
+.kpi-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 5px; font-weight: 600; }
+.kpi-value { font-family: var(--mono); font-size: 20px; font-weight: 500; color: var(--text); }
+.kpi-value.up { color: var(--red); }
+.kpi-value.dn { color: var(--green); }
+.kpi-value.accent { color: var(--accent); }
+.kpi-sub { font-size: 11px; color: var(--text3); margin-top: 3px; }
+
+/* OUTPUT */
+.out-area { padding: 20px 24px; flex: 1; background: var(--bg); }
+.out-tabs { display: flex; gap: 5px; margin-bottom: 16px; }
+.out-tab { padding: 7px 16px; border-radius: var(--radius); border: 1.5px solid var(--border2); background: var(--surface); color: var(--text3); font-family: var(--body); font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s; box-shadow: var(--shadow); }
+.out-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.out-tab:hover:not(.active) { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+.out-panel { display: none; }
+.out-panel.active { display: block; }
+.text-out { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 22px 24px; white-space: pre-wrap; font-family: var(--body); font-size: 14px; line-height: 1.8; color: var(--text); min-height: 280px; position: relative; box-shadow: var(--shadow); }
+.text-out em { color: var(--text3); font-style: italic; }
+.copy-btn { position: absolute; top: 12px; right: 12px; background: var(--surface2); border: 1.5px solid var(--border2); color: var(--text3); font-family: var(--mono); font-size: 11px; padding: 4px 10px; border-radius: 5px; cursor: pointer; font-weight: 500; transition: all .15s; }
+.copy-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+/* CALC TABLE */
+.calc-table { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--surface); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+.calc-table th { text-align: left; padding: 10px 13px; border-bottom: 2px solid var(--border); color: var(--text3); font-size: 11px; text-transform: uppercase; letter-spacing: .07em; font-weight: 600; background: var(--surface2); }
+.calc-table td { padding: 11px 13px; border-bottom: 1px solid var(--border); color: var(--text); }
+.calc-table tr:last-child td { border-bottom: none; }
+.calc-table .total-row td { font-weight: 700; background: var(--accent-bg); color: var(--text); border-top: 2px solid var(--accent-border); border-bottom: none; font-size: 14px; }
+.calc-table .rate-row td { background: #fffde7; color: var(--text); }
+.calc-table td.mono { font-family: var(--mono); }
+
+/* SPINNER */
+.spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; margin-right: 8px; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* MODAL */
+.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 300; align-items: center; justify-content: center; }
+.modal.open { display: flex; }
+.modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; max-width: 700px; width: 95%; max-height: 85vh; overflow-y: auto; padding: 24px; box-shadow: var(--shadow-md); }
+.modal-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.modal-title { font-family: var(--sans); font-weight: 700; font-size: 15px; }
+.modal-close { background: none; border: none; color: var(--text3); font-size: 20px; cursor: pointer; line-height: 1; padding: 0 2px; }
+.modal-close:hover { color: var(--text); }
+
+/* DELTA BOX */
+.delta-box { background: var(--accent-bg); border: 1.5px solid var(--accent-border); border-radius: var(--radius); padding: 12px 14px; font-family: var(--mono); font-size: 12px; line-height: 2; color: var(--text2); margin-top: 4px; }
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* UNDO/REDO + RESET */
+.history-bar { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--surface2); position: sticky; top: 42px; z-index: 19; }
+.hbtn { background: var(--surface); border: 1.5px solid var(--border2); color: var(--text3); font-size: 13px; width: 30px; height: 30px; border-radius: 5px; cursor: pointer; transition: all .15s; display: flex; align-items: center; justify-content: center; }
+.hbtn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.hbtn:disabled { opacity: .35; cursor: not-allowed; }
+.hbtn-reset { background: var(--surface); border: 1.5px solid var(--border2); color: var(--text3); font-size: 11px; font-weight: 600; font-family: var(--body); padding: 0 10px; height: 30px; border-radius: 5px; cursor: pointer; transition: all .15s; margin-left: auto; }
+.hbtn-reset:hover { border-color: var(--red); color: var(--red); background: var(--red-bg); }
+.hpos { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">BI-KA <span>/ Rate Revision Tool</span></div>
+  <div class="hbadge">v3.0 · EU Bulletin · Template mode</div>
+</header>
+
+<div class="app">
+<!-- ═══ SIDEBAR ═══ -->
+<aside class="sidebar">
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab('fuel',this)">⛽ Üzemanyag</button>
+    <button class="tab-btn" onclick="switchTab('drivers',this)">📊 Driverek</button>
+    <button class="tab-btn" onclick="switchTab('client',this)">🏢 Ügyfél</button>
+  </div>
+
+  <!-- ══ FUEL TAB ══ -->
+  <div class="tab-panel active" id="tab-fuel">
+    <div class="history-bar">
+      <button class="hbtn" id="undo-fuel" onclick="undo('fuel')" title="Visszavonás" disabled>↩</button>
+      <button class="hbtn" id="redo-fuel" onclick="redo('fuel')" title="Újra" disabled>↪</button>
+      <span class="hpos" id="hpos-fuel">—</span>
+      <button class="hbtn-reset" onclick="resetTab('fuel')">↺ Visszaállítás</button>
+    </div>
+
+    <div class="stitle">Üzemanyag hányad a fuvardíjban</div>
+    <div class="field">
+      <label>Üzemanyag hányad a fuvardíjban — <span id="fuelShareVal" style="color:var(--accent);font-family:var(--mono);font-weight:600;">28%</span></label>
+      <div style="display:flex;gap:10px;align-items:center;margin-top:6px;">
+        <input type="range" min="1" max="60" value="28" id="fuelShare"
+          style="flex:1;accent-color:var(--accent);" oninput="syncFuelShare(this.value)">
+        <input type="number" value="28" min="1" max="99" id="fuelShareInput"
+          style="width:62px;background:var(--surface);border:1.5px solid var(--border2);border-radius:5px;color:var(--accent);font-family:var(--mono);font-size:14px;padding:6px 8px;outline:none;text-align:center;"
+          oninput="syncFuelShare(this.value)">
+        <span style="font-size:13px;color:var(--text3);font-weight:500;">%</span>
+      </div>
+    </div>
+
+    <hr class="divider">
+    <div class="stitle">EUR/HUF árfolyam</div>
+    <div class="frow" style="margin-bottom:8px;">
+      <div class="field" style="margin-bottom:0">
+        <label>📋 Bázis árfolyam dátuma</label>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input type="date" id="fxBaseDate" style="flex:1;font-family:var(--mono);"
+            onchange="fetchEurHufForDate(this.value, document.getElementById('fxBase'))">
+          <button class="btn-ghost" onclick="fetchEurHufForDate(document.getElementById('fxBaseDate').value, document.getElementById('fxBase'))" style="padding:7px 10px;white-space:nowrap;">📡</button>
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label>🔄 Jelenlegi (előző napi ECB közép)</label>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input type="number" id="fxCurrent" placeholder="—" step="0.01" oninput="pushHistory('fuel');updateKPIs()"
+            style="font-family:var(--mono);font-size:14px;flex:1;">
+          <button class="btn-ghost" onclick="fetchEurHuf()" id="fxFetchBtn" style="white-space:nowrap;padding:7px 10px;">📡 Élő</button>
+        </div>
+      </div>
+    </div>
+    <div class="frow" style="margin-bottom:6px;">
+      <div class="field" style="margin-bottom:0">
+        <label>Bázis EUR/HUF <span style="font-size:10px;color:var(--text3);font-weight:400;">(kézzel módosítható)</span></label>
+        <input type="number" id="fxBase" placeholder="—" step="0.01"
+          oninput="pushHistory('fuel');updateKPIs()"
+          onchange="pushHistory('fuel');updateKPIs()"
+          style="font-family:var(--mono);font-size:14px;font-weight:600;border-color:var(--accent);">
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label>Jelenlegi EUR/HUF <span style="font-size:10px;color:var(--text3);font-weight:400;">(kézzel módosítható)</span></label>
+        <input type="number" id="fxCurrent2" placeholder="—" step="0.01"
+          oninput="syncFxCurrent(this.value)"
+          onchange="syncFxCurrent(this.value)"
+          style="font-family:var(--mono);font-size:14px;font-weight:600;border-color:var(--accent);">
+      </div>
+    </div>
+    <div id="fxResult" style="font-family:var(--mono);font-size:12px;color:var(--text2);min-height:18px;margin-bottom:4px;"></div>
+
+    <hr class="divider">
+    <div class="stitle">EU Oil Bulletin — Aktuális adatok</div>
+    <div class="bul-box">
+      <div class="info-box" style="margin-bottom:10px;">Az EC Weekly Oil Bulletin havi diesel átlagárait tárolja (EUR/1000L). Válaszd ki a bázis- és a korrekciós hónapot — a Diesel EU sor <b>automatikusan frissül</b>. Az adatbázis frissítéséhez töltsd le az EC xlsx fájlt és importáld az alábbi gombbal.</div>
+      <div class="frow" style="margin-bottom:10px;">
+        <div class="field" style="margin-bottom:0">
+          <label>📋 Árajánlat leadása</label>
+          <select id="basePriceDate" onchange="onBulletinChange()"></select>
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label>🔄 Korrekció dátuma</label>
+          <select id="correctionDate" onchange="onBulletinChange()"></select>
+        </div>
+      </div>
+      <div class="bul-result" id="bulletinResult">Számítás…</div>
+      <p style="font-size:12px;color:var(--text2);margin:10px 0 8px;line-height:1.5;">Töltsd le az EC oldalról az xlsx fájlt, majd importáld ide — a select és a kalkuláció azonnal frissül.</p>
+      <div style="display:flex;gap:8px;margin-top:0;flex-wrap:wrap;align-items:center;">
+        <a href="https://energy.ec.europa.eu/data-and-analysis/weekly-oil-bulletin_en" target="_blank" class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center;gap:5px;">🌐 EC Oil Bulletin oldal</a>
+        <label class="btn-ghost" style="cursor:pointer;display:inline-flex;align-items:center;gap:4px;">
+          📂 XLSX import
+          <input type="file" accept=".xlsx,.xls" style="display:none" onchange="handleXlsxUpload(this)">
+        </label>
+        <button class="btn-ghost" onclick="openBulletinModal()">📅 Teljes táblázat</button>
+        <button class="btn-ghost" onclick="applyBulletinToRows()">↺ Újratölt</button>
+      </div>
+      <div id="fetchStatus" class="fetch-status" style="margin-top:6px;font-size:12px;line-height:1.5;"></div>
+    </div>
+
+    <hr class="divider">
+    <div class="stitle">Üzemanyag árak — Kézi / betöltött adatok</div>
+    <div class="fuel-hdr">
+      <span style="text-align:left;">Megnevezés</span>
+      <span>Bázis ár</span>
+      <span>Jelenlegi</span>
+      <span>Δ %</span>
+      <span></span>
+    </div>
+    <div id="fuelRows"></div>
+    <button class="add-row-btn" onclick="addFuelRow()">＋ Sor hozzáadása</button>
+
+    <hr class="divider">
+    <div class="stitle">Összesített fuel hatás</div>
+    <div id="fuelSummary" style="font-family:var(--mono);font-size:12px;color:var(--text2);line-height:1.8;">—</div>
+  </div>
+
+  <!-- ══ DRIVERS TAB ══ -->
+  <div class="tab-panel" id="tab-drivers">
+    <div class="history-bar">
+      <button class="hbtn" id="undo-drivers" onclick="undo('drivers')" title="Visszavonás" disabled>↩</button>
+      <button class="hbtn" id="redo-drivers" onclick="redo('drivers')" title="Újra" disabled>↪</button>
+      <span class="hpos" id="hpos-drivers">—</span>
+      <button class="hbtn-reset" onclick="resetTab('drivers')">↺ Visszaállítás</button>
+    </div>
+    <div class="stitle">Módosítási driverek</div>
+    <div class="info-box">Minden aktív drivernél megadhatod: <strong>a driver mekkora %-a a teljes költségszerkezetnek</strong>, és <strong>mennyit változott (%)</strong>. A kettőből kalkulálódik a fuvardíjra vetített hatás.</div>
+    <div id="driverList"></div>
+  </div>
+
+  <!-- ══ CLIENT TAB ══ -->
+  <div class="tab-panel" id="tab-client">
+    <div class="history-bar">
+      <button class="hbtn" id="undo-client" onclick="undo('client')" title="Visszavonás" disabled>↩</button>
+      <button class="hbtn" id="redo-client" onclick="redo('client')" title="Újra" disabled>↪</button>
+      <span class="hpos" id="hpos-client">—</span>
+      <button class="hbtn-reset" onclick="resetTab('client')">↺ Visszaállítás</button>
+    </div>
+    <div class="stitle">Ügyfél adatok</div>
+    <div class="field"><label>Ügyfél neve</label><input type="text" id="clientName" onchange="recordClient()" placeholder="pl. Zalando SE"></div>
+    <div class="field"><label>Kapcsolattartó neve</label><input type="text" id="contactName" onchange="recordClient()" placeholder="pl. Thomas Müller"></div>
+    <div class="field"><label>Kapcsolattartó pozíció</label><input type="text" id="contactTitle" onchange="recordClient()" placeholder="pl. Head of Logistics"></div>
+    <div class="field"><label>Szerződés / referenciaszám</label><input type="text" id="contractRef" onchange="recordClient()" placeholder="pl. MSA-2023-001"></div>
+    <div class="field">
+      <label>Útvonal / Lane</label>
+      <input type="text" id="laneId" onchange="recordClient()" placeholder="pl. HU-DE FTL · Budapest → München">
+    </div>
+
+    <hr class="divider">
+    <div class="stitle">Fuvardíj adatok</div>
+    <div class="frow">
+      <div class="field">
+        <label>Szolgáltatás típusa</label>
+        <select id="serviceType">
+          <option>Full Truckload (FTL)</option>
+          <option>Less-than-Truckload (LTL)</option>
+          <option>Groupage</option>
+          <option>Express / Time-critical</option>
+          <option>E-commerce fulfillment</option>
+          <option>B2B szállítás</option>
+          <option>Cross-dock</option>
+          <option>Multimodal</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Díj egysége</label>
+        <select id="rateType" onchange="recordClient();updateKPIs()">
+          <option value="ft_km">Ft / km</option>
+          <option value="eur_km">EUR / km</option>
+          <option value="ft_total">Ft / fuvar</option>
+          <option value="eur_total" selected>EUR / fuvar</option>
+          <option value="eur_pallet">EUR / raklap</option>
+          <option value="eur_cbm">EUR / m³</option>
+        </select>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="field">
+        <label style="font-weight:600;color:var(--text);">📌 Eredeti (jelenlegi) díj</label>
+        <input type="number" id="currentRate" onchange="recordClient()" placeholder="pl. 420" step="0.01" oninput="updateKPIs()"
+          style="font-size:15px;padding:9px 11px;font-weight:600;">
+      </div>
+      <div class="field">
+        <label style="font-weight:600;color:var(--accent);">✅ Javasolt új díj</label>
+        <input type="number" id="newRateDisplay" placeholder="—" readonly
+          style="font-size:15px;padding:9px 11px;font-weight:600;border-color:var(--accent-border);color:var(--accent);background:var(--accent-bg);cursor:default;">
+      </div>
+    </div>
+    <div id="rateDeltaBox" style="display:none;" class="delta-box"></div>
+
+    <div class="frow" style="margin-top:10px;">
+      <div class="field"><label>Hatályba lépés dátuma</label><input type="date" id="effectiveDate" onchange="recordClient()"></div>
+      <div class="field"><label>Értesítési idő (nap)</label><input type="number" id="noticeDays" onchange="recordClient()" value="30" min="0"></div>
+    </div>
+    <div class="field"><label>Megjegyzés / különleges feltétel</label><textarea id="clientNote" onchange="recordClient()" placeholder="pl. Árdíjlap melléklet szerint..."></textarea></div>
+
+    <hr class="divider">
+    <div class="stitle">Kommunikáció stílusa</div>
+    <div class="tone-btns">
+      <button class="tone-btn active" id="tone-formal" onclick="setTone('formal')">Formális</button>
+      <button class="tone-btn" id="tone-partner" onclick="setTone('partner')">Partner</button>
+      <button class="tone-btn" id="tone-firm" onclick="setTone('firm')">Határozott</button>
+    </div>
+  </div>
+</aside>
+
+<!-- ═══ MAIN ═══ -->
+<main class="main">
+  <div class="main-hdr">
+    <div>
+      <div class="main-title">Díj<span>módosítás</span> kalkulátor</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:3px;">EU Bulletin · Driverek · Levél sablon</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button onclick="resetAll()" style="background:var(--surface);border:1.5px solid var(--border2);color:var(--text3);padding:10px 14px;border-radius:var(--radius);font-family:var(--body);font-weight:600;font-size:12px;cursor:pointer;transition:all .15s;" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)';this.style.background='var(--red-bg)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text3)';this.style.background='var(--surface)'">↺ Mindent visszaállít</button>
+      <button class="btn-primary" onclick="generateAll()">▶ Szöveg generálás</button>
+      <button onclick="saveToSharePoint()" style="background:#050a31;border:none;color:#fff;padding:10px 16px;border-radius:var(--radius);font-family:var(--body);font-weight:600;font-size:13px;cursor:pointer;transition:all .15s;" onmouseover="this.style.background='#1a2a6e'" onmouseout="this.style.background='#050a31'">📋 Rögzítés</button>
+      <button onclick="exportExcel()" style="background:var(--surface);border:1.5px solid var(--border2);color:var(--text2);padding:10px 16px;border-radius:var(--radius);font-family:var(--body);font-weight:600;font-size:13px;cursor:pointer;transition:all .15s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'">📥 Excel export</button>
+    </div>
+  </div>
+
+  <!-- KPI STRIP -->
+  <div class="kpi-strip">
+    <div class="kpi-box">
+      <div class="kpi-label">Üzemanyag Δ</div>
+      <div class="kpi-value" id="kpi-fuel">—</div>
+      <div class="kpi-sub">bázis → jelenlegi átlag</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-label">Fuel hatás a díjra</div>
+      <div class="kpi-value" id="kpi-rate-impact">—</div>
+      <div class="kpi-sub">hányad alapján</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-label">Egyéb driverek</div>
+      <div class="kpi-value" id="kpi-other">—</div>
+      <div class="kpi-sub" id="kpi-other-sub">aktív faktor</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-label">Összesített Δ %</div>
+      <div class="kpi-value" id="kpi-total">—</div>
+      <div class="kpi-sub">teljes javaslat</div>
+    </div>
+    <div class="kpi-box highlight">
+      <div class="kpi-label">Új díj (kalkulált)</div>
+      <div class="kpi-value accent" id="kpi-new-rate">—</div>
+      <div class="kpi-sub" id="kpi-new-rate-sub">add meg az eredeti díjat</div>
+    </div>
+  </div>
+
+  <!-- OUTPUT -->
+  <div class="out-area">
+    <div class="out-tabs">
+      <button class="out-tab active" onclick="switchOut('calc',this)">📊 Kalkuláció</button>
+      <button class="out-tab" onclick="switchOut('hu',this)">🇭🇺 Magyar</button>
+      <button class="out-tab" onclick="switchOut('en',this)">🇬🇧 English</button>
+      <button class="out-tab" onclick="switchOut('de',this)">🇩🇪 Deutsch</button>
+    </div>
+
+    <div class="out-panel active" id="out-calc">
+      <table class="calc-table">
+        <thead>
+          <tr>
+            <th>Driver</th>
+            <th>Változás %</th>
+            <th>Költségszerkezet %</th>
+            <th>Fuvardíjra vetített hatás</th>
+            <th>Státusz</th>
+          </tr>
+        </thead>
+        <tbody id="calcBody">
+          <tr><td colspan="5" style="color:var(--text3);text-align:center;padding:32px;font-style:italic;">← Töltsd ki az adatokat, majd kattints a „Szöveg generálás" gombra</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="out-panel" id="out-hu">
+      <div class="text-out" id="text-hu"><em>← Kattints a „Szöveg generálás" gombra a magyar szöveg elkészítéséhez</em></div>
+    </div>
+    <div class="out-panel" id="out-en">
+      <div class="text-out" id="text-en"><em>← Click "Szöveg generálás" to generate the English letter</em></div>
+    </div>
+    <div class="out-panel" id="out-de">
+      <div class="text-out" id="text-de"><em>← Klicke auf „Szöveg generálás" um das deutsche Schreiben zu erstellen</em></div>
+    </div>
+  </div>
+</main>
+</div>
+
+<!-- BULLETIN MODAL -->
+<div class="modal" id="bulletinModal">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <span class="modal-title">EU Weekly Oil Bulletin — Diesel átlagárak (EUR/1000L)</span>
+      <button class="modal-close" onclick="document.getElementById('bulletinModal').classList.remove('open')">✕</button>
+    </div>
+    <div class="info-box">Forrás: European Commission Weekly Oil Bulletin. Havi átlagok, adózott fogyasztói ár (EU27 átlag).</div>
+    <div id="bulletinTableContent"></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// EUR/HUF FETCH — Frankfurter API (ECB adatokat tükröz, CORS-barát)
+// https://api.frankfurter.app — kulcs nélkül, JSON, ingyenes
+// ══════════════════════════════════════════════════════════════
+
+// Adott hónap (YYYY-MM) havi átlag EUR/HUF lekérése → bázis mező kitöltése
+async function fetchEurHufForDate(dateStr, targetEl) {
+  if (!dateStr || !targetEl) return;
+  // Accept both YYYY-MM-DD and YYYY-MM
+  const fullDate = dateStr.length === 7 ? dateStr + '-01' : dateStr;
+  // For a single date, use exact date endpoint
+  const url = `https://api.frankfurter.app/${fullDate}?from=EUR&to=HUF`;
+  try {
+    const resp = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    // Single date response: { date, rates: { HUF: 405.12 } }
+    const rate = data.rates?.HUF;
+    if (!rate) throw new Error('no data');
+    targetEl.value = rate.toFixed(2);
+    updateKPIs();
+    const fxRes = document.getElementById('fxResult');
+    if (fxRes) {
+      const prev = fxRes.innerHTML;
+      const note = `📋 Bázis EUR/HUF (${data.date}): <b style="color:var(--accent)">${rate.toFixed(2)}</b>`;
+      // Don't overwrite "Élő" fetch result, but do update if it's base-related
+      if (!prev.includes('előző napi')) fxRes.innerHTML = note;
+      else fxRes.innerHTML = prev + ' · ' + note;
+    }
+  } catch(e) {
+    // Silent fail — user can fill manually
+  }
+}
+
+// Aktuális EUR/HUF lekérése → jelenlegi mező kitöltése
+async function fetchEurHuf() {
+  const btn = document.getElementById('fxFetchBtn');
+  const res = document.getElementById('fxResult');
+  btn.disabled = true;
+  btn.textContent = '⏳';
+  res.innerHTML = '<span style="color:var(--text3);">Lekérés folyamatban…</span>';
+
+  const url = 'https://api.frankfurter.app/latest?from=EUR&to=HUF';
+  try {
+    const resp = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    const rate = data.rates?.HUF;
+    if (!rate) throw new Error('Nincs HUF adat');
+    document.getElementById('fxCurrent').value = rate.toFixed(2);
+    const disp2 = document.getElementById('fxCurrent2');
+    if (disp2) disp2.value = rate.toFixed(2);
+    updateKPIs();
+    res.innerHTML = `<span style="color:var(--green);">✓ ECB előző napi közép (${data.date}): <b>${rate.toFixed(2)}</b> HUF/EUR</span>`;
+  } catch(e) {
+    res.innerHTML = `<span style="color:var(--text3);">ℹ Lekérés nem sikerült (${e.message}). Add meg kézzel.</span>`;
+  }
+  btn.disabled = false;
+  btn.textContent = '📡 Élő';
+}
+
+// ══════════════════════════════════════════════════════════════
+// EU BULLETIN DATA — built-in offline database
+// Diesel EUR/1000L EU27 monthly avg (EC Weekly Oil Bulletin)
+// ══════════════════════════════════════════════════════════════
+let BULLETIN = {
+  '2022-01':{d:1426,g:1479},'2022-02':{d:1494,g:1509},'2022-03':{d:1852,g:1774},
+  '2022-04':{d:1848,g:1780},'2022-05':{d:1888,g:1790},'2022-06':{d:1964,g:1926},
+  '2022-07':{d:1799,g:1832},'2022-08':{d:1724,g:1742},'2022-09':{d:1791,g:1680},
+  '2022-10':{d:1802,g:1647},'2022-11':{d:1724,g:1582},'2022-12':{d:1608,g:1519},
+  '2023-01':{d:1549,g:1502},'2023-02':{d:1566,g:1524},'2023-03':{d:1503,g:1536},
+  '2023-04':{d:1468,g:1543},'2023-05':{d:1398,g:1519},'2023-06':{d:1314,g:1474},
+  '2023-07':{d:1332,g:1509},'2023-08':{d:1388,g:1551},'2023-09':{d:1434,g:1572},
+  '2023-10':{d:1423,g:1557},'2023-11':{d:1371,g:1524},'2023-12':{d:1330,g:1494},
+  '2024-01':{d:1334,g:1504},'2024-02':{d:1362,g:1524},'2024-03':{d:1358,g:1551},
+  '2024-04':{d:1378,g:1577},'2024-05':{d:1366,g:1565},'2024-06':{d:1342,g:1550},
+  '2024-07':{d:1318,g:1533},'2024-08':{d:1296,g:1509},'2024-09':{d:1265,g:1483},
+  '2024-10':{d:1272,g:1481},'2024-11':{d:1269,g:1468},'2024-12':{d:1278,g:1462},
+  '2025-01':{d:1588,g:1616},'2025-02':{d:1598,g:1629},'2025-03':{d:1552,g:1584},
+  '2025-04':{d:1494,g:1555},'2025-05':{d:1456,g:1532},'2025-06':{d:1482,g:1550},
+  '2025-07':{d:1522,g:1550},'2025-08':{d:1504,g:1547},'2025-09':{d:1498,g:1552},
+  '2025-10':{d:1490,g:1543},'2025-11':{d:1539,g:1560},'2025-12':{d:1515,g:1536},
+  '2026-01':{d:1508,g:1528},'2026-02':{d:1541,g:1548},'2026-03':{d:1572,g:1574},
+};
+
+
+// Manual file upload fallback
+function handleXlsxUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const status = document.getElementById('fetchStatus');
+  status.innerHTML = '<span style="color:var(--text3);">Fájl feldolgozása…</span>';
+  loadSheetJS().then(ok => {
+    if (!ok) { status.innerHTML = '<span style="color:var(--red);">SheetJS hiba</span>'; return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+      const parsed = parseECXlsx(e.target.result);
+      if (parsed && Object.keys(parsed).length > 5) {
+        Object.assign(BULLETIN, parsed);
+        const lastKey = Object.keys(BULLETIN).sort().pop();
+        status.innerHTML = `<span style="color:var(--green);">✓ ${Object.keys(parsed).length} hét betöltve · legfrissebb: <b>${lastKey}</b></span>`;
+        populateBulletinSelects();
+        onBulletinChange();
+      } else {
+        status.innerHTML = '<span style="color:var(--red);">✗ A fájl nem értelmezhető EC Bulletin formátumként</span>';
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// ──────────────────────────────────────────────────────────────
+// BULLETIN LOGIC
+// ──────────────────────────────────────────────────────────────
+let bulletinBase = null, bulletinCorr = null;
+
+function populateBulletinSelects() {
+  const keys = Object.keys(BULLETIN).sort();
+  const baseEl = document.getElementById('basePriceDate');
+  const corrEl = document.getElementById('correctionDate');
+  const basePrev = baseEl.value;
+  const corrPrev = corrEl.value;
+  baseEl.innerHTML = keys.map(k => `<option value="${k}">${k}</option>`).join('');
+  corrEl.innerHTML = keys.map(k => `<option value="${k}">${k}</option>`).join('');
+  // Restore or set sensible defaults
+  if (basePrev && keys.includes(basePrev)) baseEl.value = basePrev;
+  else baseEl.value = keys.includes('2026-01') ? '2026-01' : keys[Math.max(0, keys.length - 15)];
+  if (corrPrev && keys.includes(corrPrev)) corrEl.value = corrPrev;
+  else corrEl.value = keys[keys.length - 1]; // most recent
+}
+
+function getExact(key) {
+  if (!key || !BULLETIN[key]) return null;
+  return {key, data: BULLETIN[key]};
+}
+
+function onBulletinChange() {
+  pushHistory('fuel');
+  bulletinBase = getExact(document.getElementById('basePriceDate').value);
+  bulletinCorr = getExact(document.getElementById('correctionDate').value);
+  renderBulletinResult();
+  // Auto-apply bulletin row whenever both are set
+  if (bulletinBase && bulletinCorr) {
+    const idx = fuelRows.findIndex(r => r.eu);
+    const row = {
+      name: `Diesel EU Bulletin (${bulletinBase.key}→${bulletinCorr.key})`,
+      base: bulletinBase.data.d, current: bulletinCorr.data.d, eu: true
+    };
+    if (idx >= 0) fuelRows[idx] = row; else fuelRows.unshift(row);
+    renderFuelRows();
+  }
+  // EUR/HUF bázis: külön dátumválasztóval kezelt, nem a bulletinhez igazodik
+  updateKPIs();
+}
+
+function renderBulletinResult() {
+  const el = document.getElementById('bulletinResult');
+  if (!bulletinBase && !bulletinCorr) { el.innerHTML = '—'; return; }
+  const ap = b => b.approx ? ` <span style="font-size:10px;color:var(--text3);">(≈ legközelebbi)</span>` : '';
+  let h = '';
+  if (bulletinBase) h += `<div>📋 Bázis <b>${bulletinBase.key}</b>${ap(bulletinBase)}: <span class="bv">${bulletinBase.data.d} EUR/1000L</span></div>`;
+  if (bulletinCorr)  h += `<div>🔄 Aktuális <b>${bulletinCorr.key}</b>${ap(bulletinCorr)}: <span class="bv">${bulletinCorr.data.d} EUR/1000L</span></div>`;
+  if (bulletinBase && bulletinCorr) {
+    const delta = (bulletinCorr.data.d - bulletinBase.data.d) / bulletinBase.data.d * 100;
+    const col = delta > 0 ? 'var(--red)' : 'var(--green)';
+    h += `<div style="margin-top:6px;font-weight:600;">EU Diesel Δ: <span style="color:${col};">${delta>=0?'+':''}${delta.toFixed(2)}%</span></div>`;
+  }
+  el.innerHTML = h;
+}
+
+function applyBulletinToRows() {
+  onBulletinChange(); // just re-trigger — auto-apply is inside onBulletinChange
+}
+
+function openBulletinModal() {
+  const keys = Object.keys(BULLETIN).sort();
+  let h = '<table class="calc-table"><thead><tr><th>Hónap</th><th style="text-align:right">Diesel (EUR/1000L)</th><th style="text-align:right">Benzin (EUR/1000L)</th></tr></thead><tbody>';
+  keys.forEach(k => {
+    const isBase = bulletinBase?.key === k;
+    const isCorr = bulletinCorr?.key === k;
+    const mark = isBase ? ' ← bázis' : isCorr ? ' ← aktuális' : '';
+    const style = (isBase||isCorr) ? 'color:var(--accent);font-weight:600;' : '';
+    h += `<tr><td style="${style}">${k}${mark}</td><td class="mono" style="text-align:right;${style}">${BULLETIN[k].d}</td><td class="mono" style="text-align:right;${style}">${BULLETIN[k].g}</td></tr>`;
+  });
+  h += '</tbody></table>';
+  document.getElementById('bulletinTableContent').innerHTML = h;
+  document.getElementById('bulletinModal').classList.add('open');
+}
+
+// ──────────────────────────────────────────────────────────────
+// FUEL ROWS
+// ──────────────────────────────────────────────────────────────
+let fuelRows = [
+  {name:'Diesel HU (Ft/L)',  base:580, current:615, eu:false},
+  {name:'Diesel DE (c/L)',   base:172, current:185, eu:false},
+  {name:'AdBlue HU (Ft/L)',  base:45,  current:52,  eu:false},
+];
+
+function renderFuelRows() {
+  document.getElementById('fuelRows').innerHTML = fuelRows.map((r,i) => {
+    const delta = r.base > 0 ? (r.current - r.base) / r.base * 100 : 0;
+    const dc = delta > 0 ? 'var(--red)' : delta < 0 ? 'var(--green)' : 'var(--text3)';
+    return `<div class="fuel-row-g">
+      <input type="text" value="${r.name}" onchange="fuelRows[${i}].name=this.value"
+        style="${r.eu?'color:var(--blue);':''}">
+      <input type="number" value="${r.base}" class="${r.eu?'eu-val':''}"
+        onchange="pushHistory('fuel');fuelRows[${i}].base=+this.value;renderFuelRows();updateKPIs()" step="0.1">
+      <input type="number" value="${r.current}"
+        onchange="pushHistory('fuel');fuelRows[${i}].current=+this.value;renderFuelRows();updateKPIs()" step="0.1">
+      <div class="delta-cell" style="color:${dc};">${r.base>0?(delta>=0?'+':'')+delta.toFixed(1)+'%':'—'}</div>
+      <button class="del-btn" onclick="pushHistory('fuel');fuelRows.splice(${i},1);renderFuelRows();updateKPIs()">×</button>
+    </div>`;
+  }).join('');
+}
+
+function addFuelRow() {
+  pushHistory('fuel');
+  fuelRows.push({name:'', base:0, current:0, eu:false});
+  renderFuelRows();
+}
+
+function syncFuelShare(v) {
+  const val = Math.min(99, Math.max(1, +v || 0));
+  document.getElementById('fuelShare').value = val;
+  document.getElementById('fuelShareInput').value = val;
+  document.getElementById('fuelShareVal').textContent = val + '%';
+  pushHistory('fuel');
+  updateKPIs();
+}
+
+// ──────────────────────────────────────────────────────────────
+// DRIVERS
+// Each driver: id, name, desc, min/max change%, def change%,
+//   defShare% = default % of total cost structure this driver represents
+// Impact on freight rate = (changeVal/100) * (costShare/100) * 100 [= % of rate]
+// ──────────────────────────────────────────────────────────────
+const DRIVERS = [
+  {id:'toll',  name:'Útdíj / Vignette',        desc:'HU/DE/AT matricadíj, e-útdíj, Maut módosítás',       minC:1,  maxC:15,  defC:5,   defShare:8},
+  {id:'labor', name:'Bérköltség / Sofőrhiány',  desc:'Minimálbér emelkedés, sofőrhiány prémium, MiLoG',    minC:2,  maxC:20,  defC:7,   defShare:25},
+  {id:'maint', name:'Fenntartás / Alkatrész',   desc:'Karbantartás, alkatrészár infláció, gumicsere',      minC:2,  maxC:15,  defC:5,   defShare:8},
+  {id:'infl',  name:'Általános infláció (PPI)',  desc:'Termelői árindex, overhead, adminisztráció',         minC:2,  maxC:12,  defC:5,   defShare:10},
+  {id:'fx',    name:'Devizaárfolyam (EUR/HUF)',  desc:'Árfolyamkockázat fedezése EUR-alapú díjaknál',       minC:1,  maxC:15,  defC:5,   defShare:5},
+  {id:'insur', name:'Biztosítás / Kockázat',     desc:'CMR/cargo biztosítási díjemelkedés, liability',      minC:3,  maxC:20,  defC:8,   defShare:4},
+  {id:'co2',   name:'CO₂ / ETS szén-kvóta',      desc:'EU ETS road transport 2027+, carbon surcharge',      minC:2,  maxC:20,  defC:8,   defShare:5},
+  {id:'infra', name:'Infrastruktúra / IT',        desc:'GPS, telematics, tachograph, digitális rendszerek',  minC:5,  maxC:20,  defC:8,   defShare:3},
+  {id:'border',name:'Határ / Customs változás',  desc:'Vámkezelési idő, dokumentációs terher',              minC:2,  maxC:20,  defC:5,   defShare:3},
+  {id:'demand',name:'Kapacitás / Kereslet',      desc:'Szezonális kapacitáshiány, spot piaci nyomás',       minC:5,  maxC:30,  defC:10,  defShare:10},
+  {id:'finance',name:'Finanszírozás / Kamat',     desc:'Flotta finanszírozási kamat, lízingdíj, EURIBOR/BUBOR változás, working capital cost', minC:3,  maxC:25,  defC:8,   defShare:6},
+];
+
+let selDrivers = new Set(['toll','labor','infl']);
+let driverChangeVals = {};
+let driverShareVals  = {};
+DRIVERS.forEach(d => {
+  driverChangeVals[d.id] = d.defC;
+  driverShareVals[d.id]  = d.defShare;
+});
+
+// FX driver state
+let fxVals = { eurBased: false, hufShare: 20 };
+
+// Calculate FX driver impact from EUR/HUF data
+function calcFxDriverImpact() {
+  const fxBase    = parseFloat(document.getElementById('fxBase')?.value);
+  const fxCurrent = parseFloat(document.getElementById('fxCurrent')?.value);
+  const origRate  = parseFloat(document.getElementById('currentRate')?.value);
+  const hufShare  = fxVals.hufShare / 100;
+  const empty = { impactPct: 0, html: '<span style="color:var(--text3)">—</span>' };
+
+  if (!fxVals.eurBased) return empty;
+  if (isNaN(fxBase) || fxBase <= 0 || isNaN(fxCurrent) || fxCurrent <= 0) {
+    return { impactPct: 0, html: '<span style="color:var(--text3)">Add meg az EUR/HUF árfolyamokat az Üzemanyag fülön.</span>' };
+  }
+  if (isNaN(origRate) || origRate <= 0) {
+    return { impactPct: 0, html: '<span style="color:var(--text3)">Add meg az eredeti díjat az Ügyfél fülön.</span>' };
+  }
+
+  const baseHUF    = origRate * fxBase;
+  const currentHUF = origRate * fxCurrent;
+  const diffHUF    = baseHUF - currentHUF;          // pozitív = HUF gyengült = veszteség
+  const kompHUF    = diffHUF * hufShare;             // csak a HUF ktg arányára
+  const kompEUR    = kompHUF / fxCurrent;            // visszaszámolva EUR-ra
+  const impactPct  = (kompEUR / origRate) * 100;     // %-ban a fuvardíjhoz
+
+  const col = impactPct > 0 ? 'var(--red)' : 'var(--green)';
+  const sign = v => (v >= 0 ? '+' : '') + v.toFixed(2);
+
+  const html = [
+    `Árajánlat: <b>${origRate.toFixed(2)} EUR</b>`,
+    `Bázis HUF érték: ${origRate.toFixed(2)} × ${fxBase.toFixed(2)} = <b>${baseHUF.toFixed(0)} HUF</b>`,
+    `Aktuális HUF érték: ${origRate.toFixed(2)} × ${fxCurrent.toFixed(2)} = <b>${currentHUF.toFixed(0)} HUF</b>`,
+    `Különbözet: <b>${sign(diffHUF)} HUF</b>`,
+    `HUF ktg. arány ${fxVals.hufShare}%: <b>${sign(kompHUF)} HUF kompenzáció</b>`,
+    `Visszaszámolva (÷${fxCurrent.toFixed(2)}): <b style="color:${col}">${sign(kompEUR)} EUR</b>`,
+    `Fuvardíj hatás: <b style="color:${col}">${sign(impactPct)}%</b>`,
+  ].join('\n');
+
+  return { impactPct, kompEUR, html };
+}
+
+function syncFxCurrent(val) {
+  // Keep hidden fxCurrent and visible fxCurrent2 in sync
+  const hidden = document.getElementById('fxCurrent');
+  if (hidden) hidden.value = val;
+  pushHistory('fuel');
+  updateKPIs();
+  // Also re-render drivers if fx driver is active to refresh the calc display
+  if (selDrivers.has('fx')) renderDrivers();
+}
+
+function renderDrivers() {
+  document.getElementById('driverList').innerHTML = DRIVERS.map(d => {
+    const sel = selDrivers.has(d.id);
+    const cv = driverChangeVals[d.id] ?? d.defC;
+    const sv = driverShareVals[d.id] ?? d.defShare;
+
+    // FX driver: special calculated impact
+    let impact, badgeText, expandHtml;
+    if (d.id === 'fx') {
+      const fxCalc = calcFxDriverImpact();
+      impact = fxCalc.impactPct;
+      badgeText = sel ? (impact > 0 ? '+' : '') + impact.toFixed(2) + '%' : d.minC + '–' + d.maxC + '%';
+      const eur = fxVals.eurBased;
+      expandHtml = `
+        <div style="margin-bottom:10px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);cursor:pointer;margin-bottom:10px;">
+            <input type="checkbox" id="fx-eur-based" ${eur?'checked':''} onclick="event.stopPropagation();fxVals.eurBased=this.checked;updateKPIs();renderDrivers();"
+              style="accent-color:var(--accent);width:15px;height:15px;">
+            <span><b>EUR-alapú számlázás</b> — az árajánlat EUR-ban van</span>
+          </label>
+        </div>
+        ${eur ? `
+        <div class="cost-share-row" style="margin-bottom:8px;">
+          <label style="font-size:11px;">HUF ktg. aránya a díjhoz (%)</label>
+          <input type="number" value="${fxVals.hufShare}" min="1" max="99" step="1" id="fx-huf-share"
+            style="background:var(--surface);border:1.5px solid var(--border2);border-radius:4px;color:var(--accent);font-family:var(--mono);font-size:13px;padding:5px 8px;outline:none;text-align:right;"
+            onchange="fxVals.hufShare=+this.value;updateKPIs();renderDriverBadge('fx')" onclick="event.stopPropagation()">
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-family:var(--mono);font-size:11px;line-height:2;color:var(--text2);">
+          ${fxCalc.html}
+        </div>` : `
+        <div class="info-box" style="margin-top:0;">
+          Kapcsold be az EUR-alapú számlázást a kalkuláció aktiválásához. Az árfolyamadatokat az Üzemanyag fülön adhatod meg.
+        </div>`}`;
+    } else {
+      impact = (cv / 100) * (sv / 100) * 100;
+      badgeText = sel ? (impact > 0 ? '+' : '') + impact.toFixed(2) + '%' : d.minC + '–' + d.maxC + '%';
+      expandHtml = `
+        <div class="cost-share-row">
+          <label>Részaránya a költségszerkezetben (%)</label>
+          <input type="number" value="${sv}" min="0.5" max="60" step="0.5" id="sv-${d.id}"
+            onchange="pushHistory('drivers');driverShareVals['${d.id}']=+this.value;updateKPIs();renderDriverBadge('${d.id}')"
+            onclick="event.stopPropagation()">
+        </div>
+        <div class="driver-change-row">
+          <label>Változás mértéke (%)</label>
+          <input type="number" value="${cv}" min="${d.minC}" max="${d.maxC}" step="0.5" id="cv-${d.id}"
+            onchange="pushHistory('drivers');driverChangeVals['${d.id}']=+this.value;updateKPIs();renderDriverBadge('${d.id}')"
+            onclick="event.stopPropagation()">
+        </div>
+        <input type="range" min="${d.minC}" max="${d.maxC}" step="0.5" value="${cv}" id="cs-${d.id}"
+          style="width:100%;accent-color:var(--accent);margin-bottom:5px;"
+          oninput="driverChangeVals['${d.id}']=+this.value;document.getElementById('cv-${d.id}').value=this.value;updateKPIs();renderDriverBadge('${d.id}')"
+          onclick="event.stopPropagation()">
+        <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--text3);">
+          <span>${d.minC}%</span>
+          <span style="color:var(--accent);">→ fuvardíj hatás: <b>+${impact.toFixed(2)}%</b></span>
+          <span>${d.maxC}%</span>
+        </div>`;
+    }
+
+    return `<div class="driver-item ${sel?'sel':''}" id="di-${d.id}">
+      <div class="driver-hdr" onclick="toggleDriver('${d.id}')">
+        <input type="checkbox" ${sel?'checked':''} onclick="event.stopPropagation();toggleDriver('${d.id}')">
+        <div style="flex:1">
+          <div class="driver-name">${d.name}</div>
+          <div class="driver-desc">${d.desc}</div>
+        </div>
+        <span class="badge badge-up" style="flex-shrink:0;margin-left:8px;white-space:nowrap;">${badgeText}</span>
+      </div>
+      <div class="driver-expand">${expandHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderDriverBadge(id) {
+  const d = DRIVERS.find(x=>x.id===id);
+  if (!d || !selDrivers.has(id)) return;
+  const cv = driverChangeVals[id] ?? d.defC;
+  const sv = driverShareVals[id] ?? d.defShare;
+  const impact = (cv/100)*(sv/100)*100;
+  // Update badge in header
+  const el = document.querySelector(`#di-${id} .badge`);
+  if (el) el.textContent = '+'+impact.toFixed(2)+'%';
+  // Update impact display in expand
+  const rangeInfo = document.querySelector(`#di-${id} .driver-expand div:last-child span:nth-child(2)`);
+  if (rangeInfo) rangeInfo.innerHTML = `→ fuvardíj hatás: <b>+${impact.toFixed(2)}%</b>`;
+}
+
+function toggleDriver(id) {
+  pushHistory('drivers');
+  if (selDrivers.has(id)) selDrivers.delete(id); else selDrivers.add(id);
+  renderDrivers(); updateKPIs();
+}
+
+// ──────────────────────────────────────────────────────────────
+// STATE & TABS
+// ──────────────────────────────────────────────────────────────
+let tone = 'formal';
+function setTone(t) {
+  if (tone !== t) pushHistory('client');
+  tone = t;
+  document.querySelectorAll('.tone-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tone-'+t).classList.add('active');
+}
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active'); btn.classList.add('active');
+}
+function switchOut(tab, btn) {
+  document.querySelectorAll('.out-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.out-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('out-'+tab).classList.add('active'); if (btn) btn.classList.add('active');
+}
+
+// ──────────────────────────────────────────────────────────────
+// KPIs
+// ──────────────────────────────────────────────────────────────
+function calcFuelDelta() {
+  const valid = fuelRows.filter(r=>r.base>0&&r.current>0);
+  if (!valid.length) return 0;
+  return valid.reduce((s,r)=>s+(r.current-r.base)/r.base,0)/valid.length*100;
+}
+
+function updateKPIs() {
+  const fuelDelta = calcFuelDelta();
+  const fuelShare = +document.getElementById('fuelShare').value / 100;
+  const rateImpact = fuelDelta * fuelShare;
+
+
+  const active = DRIVERS.filter(d=>selDrivers.has(d.id));
+  // Driver impact = change% * costShare% (both as fraction)
+  // FX driver uses special calculation, skip it in standard loop
+  const otherImpact = active.reduce((s,d) => {
+    if (d.id === 'fx') {
+      if (fxVals.eurBased) return s + calcFxDriverImpact().impactPct;
+      return s;
+    }
+    const cv = driverChangeVals[d.id] ?? d.defC;
+    const sv = driverShareVals[d.id] ?? d.defShare;
+    return s + (cv/100)*(sv/100)*100;
+  }, 0);
+  const totalImpact = rateImpact + otherImpact;
+
+  // Sync fxCurrentDisplay readonly field
+  // fxCurrent2 is the visible editable mirror of fxCurrent
+  const fxCurVal = document.getElementById('fxCurrent')?.value;
+  const fxCur2 = document.getElementById('fxCurrent2');
+  if (fxCur2 && fxCurVal && fxCur2 !== document.activeElement) {
+    fxCur2.value = parseFloat(fxCurVal).toFixed(2) || '';
+  }
+
+  const fmt = v => (v>=0?'+':'')+v.toFixed(1)+'%';
+  const cls = v => v>0?'up':v<0?'dn':'';
+
+  document.getElementById('kpi-fuel').textContent = fmt(fuelDelta);
+  document.getElementById('kpi-fuel').className = 'kpi-value '+cls(fuelDelta);
+  document.getElementById('kpi-rate-impact').textContent = fmt(rateImpact);
+  document.getElementById('kpi-rate-impact').className = 'kpi-value '+cls(rateImpact);
+  document.getElementById('kpi-other').textContent = active.length+' aktív';
+  document.getElementById('kpi-other-sub').textContent = fmt(otherImpact)+' összesen';
+  document.getElementById('kpi-total').textContent = fmt(totalImpact);
+  document.getElementById('kpi-total').className = 'kpi-value '+cls(totalImpact);
+
+  const unitLabel = {ft_km:'Ft/km',eur_km:'EUR/km',ft_total:'Ft/fuvar',eur_total:'EUR/fuvar',eur_pallet:'EUR/raklap',eur_cbm:'EUR/m³'}[document.getElementById('rateType')?.value]||'';
+  const origRate = parseFloat(document.getElementById('currentRate')?.value);
+  if (!isNaN(origRate) && origRate > 0) {
+    const newRate = origRate * (1 + totalImpact/100);
+    const absDelta = newRate - origRate;
+    document.getElementById('kpi-new-rate').textContent = newRate.toFixed(2)+' '+unitLabel;
+    document.getElementById('kpi-new-rate-sub').textContent = (absDelta>=0?'+':'')+absDelta.toFixed(2)+' | '+fmt(totalImpact);
+    document.getElementById('newRateDisplay').value = newRate.toFixed(2);
+    const box = document.getElementById('rateDeltaBox');
+    const fuelAbs = origRate*(rateImpact/100), otherAbs = origRate*(otherImpact/100);
+    box.style.display = 'block';
+    box.innerHTML =
+      `<span style="color:var(--text3)">Eredeti díj</span>         <b>${origRate.toFixed(2)} ${unitLabel}</b>\n`+
+      `<span style="color:var(--text3)">⛽ Üzemanyag hatás</span>  <span style="color:var(--red)">${rateImpact>=0?'+':''}${rateImpact.toFixed(2)}%</span> → <b>${fuelAbs>=0?'+':''}${fuelAbs.toFixed(2)} ${unitLabel}</b>\n`+
+      (active.length?`<span style="color:var(--text3)">📊 Egyéb driverek</span>    <span style="color:var(--red)">${otherImpact>=0?'+':''}${otherImpact.toFixed(2)}%</span> → <b>${otherAbs>=0?'+':''}${otherAbs.toFixed(2)} ${unitLabel}</b>\n`:'')+
+      `<span style="color:var(--accent);font-weight:600">✅ Javasolt új díj</span>   <b style="font-size:14px;color:var(--accent)">${newRate.toFixed(2)} ${unitLabel}</b>  <span style="color:var(--red)">(${absDelta>=0?'+':''}${absDelta.toFixed(2)} ${unitLabel})</span>`;
+  } else {
+    document.getElementById('kpi-new-rate').textContent = '—';
+    document.getElementById('kpi-new-rate-sub').textContent = 'add meg az eredeti díjat';
+    document.getElementById('newRateDisplay').value = '';
+    document.getElementById('rateDeltaBox').style.display = 'none';
+  }
+
+  const lines = fuelRows.filter(r=>r.base>0&&r.current>0).map(r=>{
+    const d = (r.current-r.base)/r.base*100;
+    return `${r.name}: ${r.base} → ${r.current}  (${d>=0?'+':''}${d.toFixed(1)}%)`;
+  });
+  document.getElementById('fuelSummary').textContent = lines.join('\n') || '—';
+
+  // Refresh FX driver display if active (shows live calculation breakdown)
+  if (selDrivers.has('fx')) {
+    const badge = document.querySelector('#di-fx .badge');
+    if (badge) {
+      const fxImpact = calcFxDriverImpact().impactPct;
+      badge.textContent = (fxImpact>=0?'+':'')+fxImpact.toFixed(2)+'%';
+    }
+  }
+
+  return {fuelDelta, rateImpact, otherImpact, totalImpact, active, origRate, unitLabel};
+}
+
+// ──────────────────────────────────────────────────────────────
+// CALC TABLE
+// ──────────────────────────────────────────────────────────────
+function renderCalcTable(data) {
+  const {fuelDelta, rateImpact, active, totalImpact, origRate, unitLabel} = data;
+  const fuelShare = +document.getElementById('fuelShare').value;
+  const fmt2 = v => (v>=0?'+':'')+v.toFixed(2)+'%';
+  const rc = v => v>0?'var(--red)':v<0?'var(--green)':'var(--text3)';
+
+  let rows = `<tr>
+    <td><b>⛽ Üzemanyag</b></td>
+    <td class="mono" style="color:${rc(fuelDelta)}">${fmt2(fuelDelta)}</td>
+    <td class="mono">${fuelShare}% (hányad)</td>
+    <td class="mono" style="color:${rc(rateImpact)}">${fmt2(rateImpact)}</td>
+    <td><span class="badge ${rateImpact>=0?'badge-up':'badge-dn'}">${rateImpact>0?'emelkedés':'csökkenés'}</span></td>
+  </tr>`;
+
+  active.forEach(d => {
+    let changeStr, shareStr, impactStr, impactVal;
+    if (d.id === 'fx') {
+      const fxCalc = calcFxDriverImpact();
+      impactVal = fxCalc.impactPct;
+      if (!fxVals.eurBased) {
+        changeStr = '—'; shareStr = 'EUR-alap nincs bekapcsolva'; impactStr = '0.00%';
+      } else {
+        const fxBase = parseFloat(document.getElementById('fxBase')?.value);
+        const fxCur  = parseFloat(document.getElementById('fxCurrent')?.value);
+        changeStr = (!isNaN(fxBase)&&!isNaN(fxCur)) ? `${fxBase.toFixed(0)}→${fxCur.toFixed(0)} HUF` : '—';
+        shareStr  = `HUF ktg. ${fxVals.hufShare}%`;
+        impactStr = (impactVal>=0?'+':'')+impactVal.toFixed(2)+'%';
+      }
+    } else {
+      const cv = driverChangeVals[d.id] ?? d.defC;
+      const sv = driverShareVals[d.id] ?? d.defShare;
+      impactVal = (cv/100)*(sv/100)*100;
+      changeStr = '+'+cv+'%'; shareStr = sv+'% (ktgszerkezet)';
+      impactStr = '+'+impactVal.toFixed(2)+'%';
+    }
+    const impColor = impactVal > 0 ? 'var(--red)' : impactVal < 0 ? 'var(--green)' : 'var(--text3)';
+    rows += `<tr>
+      <td>${d.name}</td>
+      <td class="mono" style="color:var(--red)">${changeStr}</td>
+      <td class="mono">${shareStr}</td>
+      <td class="mono" style="color:${impColor}">${impactStr}</td>
+      <td><span class="badge badge-up">aktív</span></td>
+    </tr>`;
+  });
+
+  rows += `<tr class="total-row">
+    <td colspan="3"><b>Összesített javaslat</b></td>
+    <td class="mono"><b>${fmt2(totalImpact)}</b></td>
+    <td><span class="badge badge-up">Javaslat</span></td>
+  </tr>`;
+
+  if (!isNaN(origRate) && origRate > 0) {
+    const newRate = origRate * (1 + totalImpact/100);
+    const absDelta = newRate - origRate;
+    rows += `<tr class="rate-row">
+      <td colspan="2" style="color:var(--text2);">💰 Eredeti díj</td>
+      <td colspan="2" class="mono">${origRate.toFixed(2)} ${unitLabel}</td>
+      <td><span class="badge badge-neu">bázis</span></td>
+    </tr>
+    <tr class="rate-row">
+      <td colspan="2" style="color:var(--accent);font-weight:700;">🎯 Javasolt új díj</td>
+      <td colspan="2" class="mono" style="color:var(--accent);font-size:15px;font-weight:700;">${newRate.toFixed(2)} ${unitLabel}</td>
+      <td class="mono" style="color:var(--red);font-size:12px;">${absDelta>=0?'+':''}${absDelta.toFixed(2)} ${unitLabel}</td>
+    </tr>`;
+  }
+
+  document.getElementById('calcBody').innerHTML = rows;
+}
+
+// ──────────────────────────────────────────────────────────────
+// LETTER TEMPLATES (sablon mód — AI nélkül)
+// ──────────────────────────────────────────────────────────────
+function buildContext() {
+  const data = updateKPIs();
+  renderCalcTable(data);
+
+  const clientName   = document.getElementById('clientName').value || 'Tisztelt Partner';
+  const contactName  = document.getElementById('contactName').value;
+  const contractRef  = document.getElementById('contractRef').value;
+  const laneId       = document.getElementById('laneId').value;
+  const serviceType  = document.getElementById('serviceType').value;
+  const effectiveDate= document.getElementById('effectiveDate').value;
+  const noticeDays   = document.getElementById('noticeDays').value;
+  const clientNote   = document.getElementById('clientNote').value;
+  const rateType     = document.getElementById('rateType').value;
+  const unitLabel    = data.unitLabel;
+  const origRate     = data.origRate;
+  const newRate      = (!isNaN(origRate) && origRate>0) ? (origRate*(1+data.totalImpact/100)) : null;
+  const absDelta     = newRate ? newRate - origRate : null;
+  const fuelShare    = document.getElementById('fuelShare').value;
+
+  const activeDriverNames = data.active.map(d=>d.name).join(', ') || '—';
+  const fmt1 = v => (v>=0?'+':'')+v.toFixed(1)+'%';
+  const fmt2 = v => (v>=0?'+':'')+v.toFixed(2)+'%';
+
+  const bulInfo = (bulletinBase && bulletinCorr)
+    ? `EU Weekly Oil Bulletin (EC): ${bulletinBase.key}: ${bulletinBase.data.d} EUR/1000L → ${bulletinCorr.key}: ${bulletinCorr.data.d} EUR/1000L (${fmt2((bulletinCorr.data.d-bulletinBase.data.d)/bulletinBase.data.d*100)})`
+    : null;
+
+  const effectiveDateFormatted = effectiveDate
+    ? new Date(effectiveDate).toLocaleDateString('hu-HU', {year:'numeric',month:'long',day:'numeric'})
+    : '[hatályba lépési dátum]';
+  const effectiveDateEN = effectiveDate
+    ? new Date(effectiveDate).toLocaleDateString('en-GB', {year:'numeric',month:'long',day:'numeric'})
+    : '[effective date]';
+  const effectiveDateDE = effectiveDate
+    ? new Date(effectiveDate).toLocaleDateString('de-DE', {year:'numeric',month:'long',day:'numeric'})
+    : '[Datum]';
+
+  return {
+    data, clientName, contactName, contractRef, serviceType, effectiveDate,
+    effectiveDateFormatted, effectiveDateEN, effectiveDateDE,
+    noticeDays, clientNote, unitLabel, origRate, newRate, absDelta, fuelShare,
+    activeDriverNames, fmt1, fmt2, bulInfo, laneId
+  };
+}
+
+function generateLetter_HU(ctx) {
+  const {data, clientName, contactName, contractRef, serviceType, effectiveDateFormatted,
+         noticeDays, clientNote, unitLabel, origRate, newRate, absDelta, fuelShare,
+         activeDriverNames, fmt1, fmt2, bulInfo} = ctx;
+  const salut = contactName ? `Tisztelt ${contactName}!` : `Tisztelt Partnerünk!`;
+  const today = new Date().toLocaleDateString('hu-HU',{year:'numeric',month:'long',day:'numeric'});
+  const rateSection = (!isNaN(origRate) && origRate>0 && newRate)
+    ? `\nJelenlegi díj:   ${origRate.toFixed(2)} ${unitLabel}\nJavasolt új díj: ${newRate.toFixed(2)} ${unitLabel}  (${absDelta>=0?'+':''}${absDelta.toFixed(2)} ${unitLabel}, ${fmt1(data.totalImpact)})\n`
+    : '';
+  const contractSection = contractRef ? `\nReferencia: ${contractRef}` : '';
+  const noteSection = clientNote ? `\nMegjegyzés: ${clientNote}` : '';
+  const bulSection = bulInfo ? `\nAz Európai Bizottság Weekly Oil Bulletin adatai alapján: ${bulInfo}` : '';
+
+  return `Budapest, ${today}
+
+${salut}
+
+Tárgy: Fuvardíj-módosítás értesítő — ${serviceType}${laneId ? ' · ' + laneId : ''}${contractSection}
+
+Ezúton tájékoztatjuk, hogy az elmúlt időszakban bekövetkezett jelentős költségváltozások szükségessé teszik a meglévő szállítási díjaink felülvizsgálatát.
+
+Az üzemanyag-árak változása a fuvardíj ${fuelShare}%-át kitevő üzemanyag-hányadon keresztül ${fmt1(data.rateImpact)} mértékben módosítja a díjalapot. Az üzemanyag-árak átlagos változása: ${fmt1(data.fuelDelta)}.${bulSection}
+${data.active.length > 0 ? `\nAz üzemanyagon túlmenően az alábbi tényezők is indokolják a felülvizsgálatot: ${activeDriverNames}. Ezek együttes hatása további ${fmt1(data.otherImpact)} mértékű változást eredményez.\n` : ''}
+Az összes tényező figyelembevételével a díjak kiigazítását összesen ${fmt1(data.totalImpact)} mértékben tartjuk szükségesnek.
+${rateSection}
+Az új díjak ${effectiveDateFormatted} napjától lépnek hatályba, a ${noticeDays} napos értesítési idővel összhangban.${noteSection}
+
+Bízunk abban, hogy a hosszú távú, kölcsönösen előnyös együttműködésünk keretében a fenti módosítás megértésre talál. Kérdés esetén állunk szívesen rendelkezésre.
+
+Tisztelettel,`;
+}
+
+function generateLetter_EN(ctx) {
+  const {data, clientName, contactName, contractRef, serviceType, effectiveDateEN,
+         noticeDays, clientNote, unitLabel, origRate, newRate, absDelta, fuelShare,
+         activeDriverNames, fmt1, fmt2, bulInfo} = ctx;
+  const salut = contactName ? `Dear ${contactName},` : `Dear Sir or Madam,`;
+  const today = new Date().toLocaleDateString('en-GB',{year:'numeric',month:'long',day:'numeric'});
+  const rateSection = (!isNaN(origRate) && origRate>0 && newRate)
+    ? `\nCurrent rate:    ${origRate.toFixed(2)} ${unitLabel}\nProposed new rate: ${newRate.toFixed(2)} ${unitLabel}  (${absDelta>=0?'+':''}${absDelta.toFixed(2)} ${unitLabel}, ${fmt1(data.totalImpact)})\n`
+    : '';
+  const contractSection = contractRef ? `\nReference: ${contractRef}` : '';
+  const noteSection = clientNote ? `\nNote: ${clientNote}` : '';
+  const bulSection = bulInfo ? `\nBased on the EU Commission Weekly Oil Bulletin: ${bulInfo}` : '';
+
+  return `Budapest, ${today}
+
+${salut}
+
+Re: Freight Rate Revision Notice — ${serviceType}${ctx.laneId ? ' · ' + ctx.laneId : ''}${contractSection}
+
+We are writing to inform you of a necessary adjustment to our freight rates, reflecting substantial cost increases that have occurred in recent months.
+
+Fuel represents ${fuelShare}% of our total freight rate structure. Due to the movement in fuel prices (average change: ${fmt1(data.fuelDelta)}), this component alone drives a ${fmt1(data.rateImpact)} adjustment to our rates.${bulSection}
+${data.active.length > 0 ? `\nBeyond fuel, the following cost drivers further support the rate revision: ${activeDriverNames}. The combined effect of these factors represents an additional ${fmt1(data.otherImpact)} impact.\n` : ''}
+Taking all factors into account, we propose a total rate adjustment of ${fmt1(data.totalImpact)}.
+${rateSection}
+The revised rates will take effect from ${effectiveDateEN}, in accordance with the ${noticeDays}-day notice period stipulated in our agreement.${noteSection}
+
+We greatly value our partnership with ${clientName} and remain committed to providing reliable, high-quality logistics services. We are happy to discuss this revision in detail at your convenience.
+
+Yours sincerely,`;
+}
+
+function generateLetter_DE(ctx) {
+  const {data, clientName, contactName, contractRef, serviceType, effectiveDateDE,
+         noticeDays, clientNote, unitLabel, origRate, newRate, absDelta, fuelShare,
+         activeDriverNames, fmt1, fmt2, bulInfo} = ctx;
+  const salut = contactName ? `Sehr geehrte/r ${contactName},` : `Sehr geehrte Damen und Herren,`;
+  const today = new Date().toLocaleDateString('de-DE',{year:'numeric',month:'long',day:'numeric'});
+  const rateSection = (!isNaN(origRate) && origRate>0 && newRate)
+    ? `\nAktueller Tarif:    ${origRate.toFixed(2)} ${unitLabel}\nVorgeschlagener Tarif: ${newRate.toFixed(2)} ${unitLabel}  (${absDelta>=0?'+':''}${absDelta.toFixed(2)} ${unitLabel}, ${fmt1(data.totalImpact)})\n`
+    : '';
+  const contractSection = contractRef ? `\nReferenz: ${contractRef}` : '';
+  const noteSection = clientNote ? `\nHinweis: ${clientNote}` : '';
+  const bulSection = bulInfo ? `\nGemäß dem EU Commission Weekly Oil Bulletin: ${bulInfo}` : '';
+
+  return `Budapest, ${today}
+
+${salut}
+
+Betreff: Anpassung der Frachtkonditionen — ${serviceType}${ctx.laneId ? ' · ' + ctx.laneId : ''}${contractSection}
+
+Mit diesem Schreiben informieren wir Sie über eine notwendige Anpassung unserer Frachttarife aufgrund erheblicher Kostensteigerungen im Marktumfeld.
+
+Der Kraftstoffanteil beträgt ${fuelShare}% unserer gesamten Frachtkosten. Aufgrund der Veränderung der Kraftstoffpreise (durchschnittliche Veränderung: ${fmt1(data.fuelDelta)}) ergibt sich allein daraus eine Anpassung von ${fmt1(data.rateImpact)}.${bulSection}
+${data.active.length > 0 ? `\nDarüber hinaus begründen folgende Kostentreiber eine Tarifanpassung: ${activeDriverNames}. Der kumulative Effekt dieser Faktoren beläuft sich auf weitere ${fmt1(data.otherImpact)}.\n` : ''}
+Unter Berücksichtigung aller Faktoren schlagen wir eine Gesamtanpassung von ${fmt1(data.totalImpact)} vor.
+${rateSection}
+Die angepassten Tarife treten ab dem ${effectiveDateDE} in Kraft, entsprechend der vereinbarten Ankündigungsfrist von ${noticeDays} Tagen.${noteSection}
+
+Wir schätzen unsere langjährige Partnerschaft mit ${clientName} sehr und stehen für Rückfragen jederzeit zur Verfügung.
+
+Mit freundlichen Grüßen,`;
+}
+
+// ──────────────────────────────────────────────────────────────
+// GENERATE ALL
+// ──────────────────────────────────────────────────────────────
+function generateAll() {
+  const ctx = buildContext();
+
+  document.getElementById('text-hu').innerHTML =
+    `<button class="copy-btn" onclick="copyText('text-hu')">Másolás</button>${esc(generateLetter_HU(ctx))}`;
+  document.getElementById('text-en').innerHTML =
+    `<button class="copy-btn" onclick="copyText('text-en')">Copy</button>${esc(generateLetter_EN(ctx))}`;
+  document.getElementById('text-de').innerHTML =
+    `<button class="copy-btn" onclick="copyText('text-de')">Kopieren</button>${esc(generateLetter_DE(ctx))}`;
+}
+
+function copyText(id) {
+  const el = document.getElementById(id);
+  const text = el.innerText.replace(/^(Másolás|Copy|Kopieren)\n/,'');
+  navigator.clipboard.writeText(text);
+  const btn = el.querySelector('.copy-btn');
+  const orig = btn.textContent;
+  btn.textContent = '✓ Kész!';
+  setTimeout(()=>{ try{btn.textContent=orig;}catch(e){} }, 1500);
+}
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ══════════════════════════════════════════════════════════════
+// UNDO / REDO + RESET ENGINE
+// Per-tab history stack, max 30 steps each
+// ══════════════════════════════════════════════════════════════
+
+const HISTORY = { fuel: [], drivers: [], client: [] };
+const HIST_POS = { fuel: -1, drivers: -1, client: -1 };
+const HIST_MAX = 30;
+let _historyPaused = false;
+
+// Default state snapshot for reset
+const DEFAULTS = {
+  fuel: () => ({
+    fuelShare: '28',
+    fuelRows: [
+      {name:'Diesel HU (Ft/L)', base:580, current:615, eu:false},
+      {name:'Diesel DE (c/L)',  base:172, current:185, eu:false},
+      {name:'AdBlue HU (Ft/L)', base:45,  current:52,  eu:false},
+    ],
+    basePriceDate: '2026-01',
+    correctionDate: Object.keys(BULLETIN).sort().pop(),
+    fxBase: '', fxCurrent: '',
+  }),
+  drivers: () => ({
+    selDrivers: ['toll','labor','infl'],
+    driverChangeVals: Object.fromEntries(DRIVERS.map(d=>[d.id, d.defC])),
+    driverShareVals:  Object.fromEntries(DRIVERS.map(d=>[d.id, d.defShare])),
+  }),
+  client: () => ({
+    clientName:'', contactName:'', contactTitle:'', contractRef:'', laneId:'',
+    serviceType: 0, rateType: 'ft_km', currency: 'HUF',
+    currentRate:'', effectiveDate:'', noticeDays:'30', clientNote:'', tone:'formal',
+  }),
+};
+
+// Capture current state of a tab
+function captureState(tab) {
+  if (tab === 'fuel') {
+    return {
+      fuelShare: document.getElementById('fuelShare').value,
+      fuelRows: JSON.parse(JSON.stringify(fuelRows)),
+      basePriceDate: document.getElementById('basePriceDate').value,
+      correctionDate: document.getElementById('correctionDate').value,
+      fxBase: document.getElementById('fxBase').value,
+      fxCurrent: document.getElementById('fxCurrent').value,
+    };
+  }
+  if (tab === 'drivers') {
+    return {
+      selDrivers: [...selDrivers],
+      driverChangeVals: {...driverChangeVals},
+      driverShareVals: {...driverShareVals},
+    };
+  }
+  if (tab === 'client') {
+    return {
+      clientName:   document.getElementById('clientName').value,
+      contactName:  document.getElementById('contactName').value,
+      contactTitle: document.getElementById('contactTitle').value,
+      contractRef:  document.getElementById('contractRef').value,
+      laneId:       document.getElementById('laneId').value,
+      serviceType:  document.getElementById('serviceType').selectedIndex,
+      rateType:     document.getElementById('rateType').value,
+      currency:     document.getElementById('currency').value,
+      currentRate:  document.getElementById('currentRate').value,
+      effectiveDate:document.getElementById('effectiveDate').value,
+      noticeDays:   document.getElementById('noticeDays').value,
+      clientNote:   document.getElementById('clientNote').value,
+      tone,
+    };
+  }
+}
+
+// Apply a state snapshot to a tab
+function applyState(tab, state) {
+  _historyPaused = true;
+  if (tab === 'fuel') {
+    syncFuelShare(state.fuelShare);
+    fuelRows = JSON.parse(JSON.stringify(state.fuelRows));
+    renderFuelRows();
+    const bd = document.getElementById('basePriceDate');
+    const cd = document.getElementById('correctionDate');
+    if (bd && state.basePriceDate) bd.value = state.basePriceDate;
+    if (cd && state.correctionDate) cd.value = state.correctionDate;
+    document.getElementById('fxBase').value    = state.fxBase    || '';
+    document.getElementById('fxCurrent').value = state.fxCurrent || '';
+    bulletinBase = getExact(bd?.value);
+    bulletinCorr = getExact(cd?.value);
+    renderBulletinResult();
+  }
+  if (tab === 'drivers') {
+    selDrivers = new Set(state.selDrivers);
+    Object.assign(driverChangeVals, state.driverChangeVals);
+    Object.assign(driverShareVals,  state.driverShareVals);
+    renderDrivers();
+  }
+  if (tab === 'client') {
+    document.getElementById('clientName').value    = state.clientName;
+    document.getElementById('contactName').value   = state.contactName;
+    document.getElementById('contactTitle').value  = state.contactTitle;
+    document.getElementById('contractRef').value   = state.contractRef;
+    document.getElementById('laneId').value        = state.laneId;
+    document.getElementById('serviceType').selectedIndex = state.serviceType;
+    document.getElementById('rateType').value      = state.rateType;
+    document.getElementById('currency').value      = state.currency;
+    document.getElementById('currentRate').value   = state.currentRate;
+    document.getElementById('effectiveDate').value = state.effectiveDate;
+    document.getElementById('noticeDays').value    = state.noticeDays;
+    document.getElementById('clientNote').value    = state.clientNote;
+    setTone(state.tone || 'formal');
+  }
+  _historyPaused = false;
+  updateKPIs();
+}
+
+// Push current state to history (called before every change)
+function pushHistory(tab) {
+  if (_historyPaused) return;
+  const state = captureState(tab);
+  const stack = HISTORY[tab];
+  // Truncate forward history
+  const pos = HIST_POS[tab];
+  stack.splice(pos + 1);
+  stack.push(state);
+  if (stack.length > HIST_MAX) stack.shift();
+  HIST_POS[tab] = stack.length - 1;
+  updateHistoryUI(tab);
+}
+
+function undo(tab) {
+  if (HIST_POS[tab] <= 0) return;
+  HIST_POS[tab]--;
+  applyState(tab, HISTORY[tab][HIST_POS[tab]]);
+  updateHistoryUI(tab);
+}
+
+function redo(tab) {
+  if (HIST_POS[tab] >= HISTORY[tab].length - 1) return;
+  HIST_POS[tab]++;
+  applyState(tab, HISTORY[tab][HIST_POS[tab]]);
+  updateHistoryUI(tab);
+}
+
+function updateHistoryUI(tab) {
+  const pos   = HIST_POS[tab];
+  const total = HISTORY[tab].length;
+  const undoBtn = document.getElementById('undo-' + tab);
+  const redoBtn = document.getElementById('redo-' + tab);
+  const posEl   = document.getElementById('hpos-' + tab);
+  if (undoBtn) undoBtn.disabled = pos <= 0;
+  if (redoBtn) redoBtn.disabled = pos >= total - 1;
+  if (posEl)   posEl.textContent = total > 1 ? `${pos + 1} / ${total}` : '—';
+}
+
+function resetTab(tab) {
+  if (!confirm('Visszaállítod az "' + {fuel:'Üzemanyag', drivers:'Driverek', client:'Ügyfél'}[tab] + '" oldal összes értékét alaphelyzetbe?')) return;
+  const def = DEFAULTS[tab]();
+  applyState(tab, def);
+  // Clear history for this tab and start fresh
+  HISTORY[tab] = [captureState(tab)];
+  HIST_POS[tab] = 0;
+  updateHistoryUI(tab);
+}
+
+function resetAll() {
+  if (!confirm('Minden oldal összes értékét visszaállítja alaphelyzetbe. Folytatod?')) return;
+  ['fuel','drivers','client'].forEach(tab => {
+    const def = DEFAULTS[tab]();
+    applyState(tab, def);
+    HISTORY[tab] = [captureState(tab)];
+    HIST_POS[tab] = 0;
+    updateHistoryUI(tab);
+  });
+}
+
+// Auto-record history: wrap key mutating functions
+const _origRenderFuelRows = null; // patched in init
+function recordFuel() { pushHistory('fuel'); }
+function recordDrivers() { pushHistory('drivers'); }
+function recordClient() { pushHistory('client'); }
+
+// ──────────────────────────────────────────────────────────────
+// SHAREPOINT RÖGZÍTÉS — Power Automate Flow webhook
+// ──────────────────────────────────────────────────────────────
+const FLOW_URL = "https://default386f4cd5c52b4fff8c9f676ce591dd.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/fce6b54ee1e34c90940bbfbf21a0f4e9/triggers/manual/paths/invoke?api-version=1";
+
+async function saveToSharePoint() {
+  const data = updateKPIs();
+
+  // Collect all values
+  const today        = new Date().toISOString().split('T')[0];
+  const clientName   = document.getElementById('clientName').value   || '';
+  const contactName  = document.getElementById('contactName').value  || '';
+  const laneId       = document.getElementById('laneId').value       || '';
+  const contractRef  = document.getElementById('contractRef').value  || '';
+  const serviceType  = document.getElementById('serviceType').value;
+  const rateType     = document.getElementById('rateType').value;
+  const unitLabel    = data.unitLabel || '';
+  const origRate     = data.origRate;
+  const newRate      = (!isNaN(origRate) && origRate > 0) ? origRate * (1 + data.totalImpact / 100) : null;
+  const absDelta     = newRate ? newRate - origRate : null;
+  const fuelShare    = document.getElementById('fuelShare').value;
+  const fxBase       = document.getElementById('fxBase').value       || '';
+  const fxCurrent    = document.getElementById('fxCurrent').value    || '';
+  const effectiveDate= document.getElementById('effectiveDate').value|| '';
+  const noticeDays   = document.getElementById('noticeDays').value   || '';
+  const clientNote   = document.getElementById('clientNote').value   || '';
+  const fxCalc       = calcFxDriverImpact();
+  const baseKey      = document.getElementById('basePriceDate')?.value || '';
+  const corrKey      = document.getElementById('correctionDate')?.value || '';
+
+  const payload = {
+    "Rögzítés dátuma":      today,
+    "Ügyfél":               clientName,
+    "Kapcsolattartó":       contactName,
+    "Lane":                 laneId,
+    "Szerződés ref.":       contractRef,
+    "Szolgáltatás":         serviceType,
+    "Díj egysége":          unitLabel,
+    "Eredeti díj":          (!isNaN(origRate) && origRate > 0) ? origRate.toFixed(2) : '',
+    "Javasolt új díj":      newRate ? newRate.toFixed(2) : '',
+    "Különbözet":           absDelta ? absDelta.toFixed(2) : '',
+    "Összesített Δ%":       data.totalImpact.toFixed(2),
+    "Fuel Δ%":              data.fuelDelta.toFixed(2),
+    "Fuel hányad%":         fuelShare,
+    "Egyéb driverek Δ%":    data.otherImpact.toFixed(2),
+    "EUR/HUF bázis":        fxBase,
+    "EUR/HUF jelenlegi":    fxCurrent,
+    "EUR alapú":            fxVals.eurBased ? 'Igen' : 'Nem',
+    "HUF ktg. arány%":      fxVals.eurBased ? fxVals.hufShare.toString() : '',
+    "FX hatás Δ%":          fxVals.eurBased ? fxCalc.impactPct.toFixed(2) : '',
+    "EU Bulletin bázis":    baseKey,
+    "EU Bulletin aktuális": corrKey,
+    "EU Diesel bázis":      bulletinBase ? bulletinBase.data.d.toString() : '',
+    "EU Diesel aktuális":   bulletinCorr ? bulletinCorr.data.d.toString() : '',
+    "Hatályba lépés":       effectiveDate,
+    "Értesítési idő (nap)": noticeDays,
+    "Megjegyzés":           clientNote,
+    "Tone":                 tone,
+  };
+
+  // Validate minimum required fields
+  if (!clientName && !laneId) {
+    alert('Kérlek add meg legalább az ügyfél nevét vagy a lane-t a rögzítés előtt.');
+    return;
+  }
+
+  // Show saving indicator
+  const btn = document.querySelector('[onclick="saveToSharePoint()"]');
+  const origText = btn.textContent;
+  btn.textContent = '⏳ Rögzítés...';
+  btn.disabled = true;
+
+  try {
+    const resp = await fetch(FLOW_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(15000),
+    });
+
+    if (resp.ok || resp.status === 202) {
+      btn.textContent = '✓ Rögzítve!';
+      btn.style.background = 'var(--green)';
+      setTimeout(() => {
+        btn.textContent = origText;
+        btn.style.background = '#050a31';
+        btn.disabled = false;
+      }, 2500);
+    } else {
+      throw new Error('HTTP ' + resp.status);
+    }
+  } catch(e) {
+    btn.textContent = '✗ Hiba';
+    btn.style.background = 'var(--red)';
+    alert('Rögzítés sikertelen: ' + e.message + '\n\nEllenőrizd a Flow URL-t és a hálózati kapcsolatot.');
+    setTimeout(() => {
+      btn.textContent = origText;
+      btn.style.background = '#050a31';
+      btn.disabled = false;
+    }, 2000);
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
+// EXCEL EXPORT — SheetJS in-browser (no server needed)
+// ──────────────────────────────────────────────────────────────
+async function loadSheetJSWrite() {
+  if (window.XLSX) return true;
+  return new Promise(resolve => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload = () => resolve(true);
+    s.onerror = () => resolve(false);
+    document.head.appendChild(s);
+  });
+}
+
+async function exportExcel() {
+  const ok = await loadSheetJSWrite();
+  if (!ok) { alert('SheetJS betöltése nem sikerült.'); return; }
+
+  const data = updateKPIs();
+
+  // Collect all form values
+  const clientName  = document.getElementById('clientName').value  || '—';
+  const contactName = document.getElementById('contactName').value || '—';
+  const contractRef = document.getElementById('contractRef').value || '—';
+  const laneId      = document.getElementById('laneId').value      || '—';
+  const serviceType = document.getElementById('serviceType').value;
+  const rateType    = document.getElementById('rateType').value;
+  const unitLabel   = data.unitLabel || '';
+  const origRate    = data.origRate;
+  const newRate     = (!isNaN(origRate) && origRate > 0) ? origRate * (1 + data.totalImpact / 100) : null;
+  const fuelShare   = document.getElementById('fuelShare').value;
+  const fxBase      = document.getElementById('fxBase').value      || '—';
+  const fxCurrent   = document.getElementById('fxCurrent').value   || '—';
+  const effectiveDate = document.getElementById('effectiveDate').value || '—';
+  const today       = new Date().toISOString().split('T')[0];
+  const fmt2        = v => (v >= 0 ? '+' : '') + v.toFixed(2) + '%';
+
+  const wb = XLSX.utils.book_new();
+
+  // ── Sheet 1: Összefoglaló ──────────────────────────────────
+  const summaryRows = [
+    ['BI-KA Adaptive Logistics — Fuvardíj módosítás kalkuláció'],
+    ['Exportálva:', today],
+    [],
+    ['AZONOSÍTÁS'],
+    ['Ügyfél',          clientName],
+    ['Kapcsolattartó',  contactName],
+    ['Szerződés ref.',  contractRef],
+    ['Útvonal / Lane',  laneId],
+    ['Szolgáltatás',    serviceType],
+    ['Díj egysége',     unitLabel],
+    [],
+    ['ÁRFOLYAM'],
+    ['EUR/HUF bázis',   fxBase],
+    ['EUR/HUF jelenlegi', fxCurrent],
+    [],
+    ['KALKULÁCIÓ EREDMÉNYE'],
+    ['Üzemanyag Δ (átlag)',        fmt2(data.fuelDelta)],
+    ['Üzemanyag hányad a díjban',  fuelShare + '%'],
+    ['Fuel hatás a fuvardíjra',    fmt2(data.rateImpact)],
+    ['Egyéb driverek hatása',      fmt2(data.otherImpact)],
+    ['Összesített javaslat Δ',     fmt2(data.totalImpact)],
+    [],
+    ['DÍJVÁLTOZÁS'],
+    ['Eredeti díj',    (!isNaN(origRate) && origRate > 0) ? origRate.toFixed(2) + ' ' + unitLabel : '—'],
+    ['Javasolt új díj', newRate ? newRate.toFixed(2) + ' ' + unitLabel : '—'],
+    ['Különbözet',      newRate ? ((newRate - origRate) >= 0 ? '+' : '') + (newRate - origRate).toFixed(2) + ' ' + unitLabel : '—'],
+    [],
+    ['Hatályba lépés', effectiveDate],
+  ];
+  const wsSummary = XLSX.utils.aoa_to_sheet(summaryRows);
+  wsSummary['!cols'] = [{wch:28},{wch:32}];
+  // Bold title
+  if (wsSummary['A1']) wsSummary['A1'].s = {font:{bold:true,sz:13}};
+  XLSX.utils.book_append_sheet(wb, wsSummary, 'Összefoglaló');
+
+  // ── Sheet 2: Driverek részletezése ────────────────────────
+  const driverHeader = ['Driver', 'Leírás', 'Változás %', 'Ktgszerkezet %', 'Fuvardíj hatás %', 'Státusz'];
+  const driverRows   = [driverHeader];
+
+  // Fuel row
+  driverRows.push([
+    'Üzemanyag',
+    `${fuelShare}% hányad a díjban`,
+    parseFloat(data.fuelDelta.toFixed(2)),
+    parseFloat(fuelShare),
+    parseFloat(data.rateImpact.toFixed(2)),
+    'aktív'
+  ]);
+
+  // Active drivers
+  data.active.forEach(d => {
+    const cv = driverChangeVals[d.id] ?? d.defC;
+    const sv = driverShareVals[d.id] ?? d.defShare;
+    const impact = (cv / 100) * (sv / 100) * 100;
+    driverRows.push([d.name, d.desc, cv, sv, parseFloat(impact.toFixed(2)), 'aktív']);
+  });
+
+  // Total row
+  driverRows.push(['ÖSSZESEN', '', '', '', parseFloat(data.totalImpact.toFixed(2)), '']);
+
+  const wsDrivers = XLSX.utils.aoa_to_sheet(driverRows);
+  wsDrivers['!cols'] = [{wch:24},{wch:40},{wch:14},{wch:16},{wch:18},{wch:10}];
+  XLSX.utils.book_append_sheet(wb, wsDrivers, 'Driverek');
+
+  // ── Sheet 3: Üzemanyag árak ───────────────────────────────
+  const fuelHeader = ['Megnevezés', 'Bázis ár', 'Jelenlegi ár', 'Δ %'];
+  const fuelDataRows = [fuelHeader];
+  fuelRows.forEach(r => {
+    const delta = r.base > 0 ? ((r.current - r.base) / r.base * 100).toFixed(2) : '—';
+    fuelDataRows.push([r.name, r.base, r.current, r.base > 0 ? parseFloat(delta) : '—']);
+  });
+  if (bulletinBase && bulletinCorr) {
+    fuelDataRows.push([]);
+    fuelDataRows.push(['EU Bulletin bázis hónap',   bulletinBase.key, bulletinBase.data.d + ' EUR/1000L', '']);
+    fuelDataRows.push(['EU Bulletin jelenlegi hónap', bulletinCorr.key, bulletinCorr.data.d + ' EUR/1000L', '']);
+  }
+  const wsFuel = XLSX.utils.aoa_to_sheet(fuelDataRows);
+  wsFuel['!cols'] = [{wch:32},{wch:14},{wch:14},{wch:10}];
+  XLSX.utils.book_append_sheet(wb, wsFuel, 'Üzemanyag árak');
+
+  // ── Letöltés ──────────────────────────────────────────────
+  const fileName = [
+    'BIKA_rate_revision',
+    laneId !== '—' ? laneId.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 30) : '',
+    today
+  ].filter(Boolean).join('_') + '.xlsx';
+
+  XLSX.writeFile(wb, fileName);
+}
+
+// ──────────────────────────────────────────────────────────────
+// INIT
+// ──────────────────────────────────────────────────────────────
+function init() {
+  renderFuelRows();
+  renderDrivers();
+  populateBulletinSelects();
+  _historyPaused = true;
+  onBulletinChange();
+  const d = new Date(); d.setDate(d.getDate()+30);
+  document.getElementById('effectiveDate').value = d.toISOString().split('T')[0];
+  updateKPIs();
+  _historyPaused = false;
+  // Auto-fetch current EUR/HUF
+  fetchEurHuf().catch(()=>{});
+  // Set default base date for FX to ~1 year ago
+  const fxDateEl = document.getElementById('fxBaseDate');
+  if (fxDateEl && !fxDateEl.value) {
+    // Default: 2025-10-01, shifted to next weekday if weekend
+    let d = new Date('2025-10-01');
+    const dow = d.getDay(); // 0=Sun, 6=Sat
+    if (dow === 0) d.setDate(d.getDate() + 1); // Sun → Mon
+    if (dow === 6) d.setDate(d.getDate() + 2); // Sat → Mon
+    fxDateEl.value = d.toISOString().split('T')[0];
+  }
+  // Seed initial history for each tab
+  ['fuel','drivers','client'].forEach(tab => {
+    HISTORY[tab] = [captureState(tab)];
+    HIST_POS[tab] = 0;
+    updateHistoryUI(tab);
+  });
+}
+init();
+</script>
+</body>
+</html>
