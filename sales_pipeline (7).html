@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sales Pipeline Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f0f2f8;
+  --surface: #fff;
+  --border: #dde1ef;
+  --text: #0b0e1c;
+  --muted: #6a6f8a;
+  --radius: 12px;
+
+  /* Stage colors */
+  --wip-bg:#e8f0fc; --wip:#1a55b0; --wip-b:#9db8e8;
+  --todo-bg:#fff7e0; --todo:#885200; --todo-b:#d4b040;
+  --done-bg:#e6f7f2; --done:#0f5c42; --done-b:#88ccb4;
+  --lost-bg:#fdf0ef; --lost:#a01c10; --lost-b:#e0a098;
+  --out-bg:#f2f3f8; --out:#5a5f78; --out-b:#c0c4d8;
+
+  /* Revenue colors */
+  --r1m:#0f5c42; --r1m-bg:#e6f7f2; --r1m-b:#88ccb4;
+  --r500:#1a55b0; --r500-bg:#e8f0fc; --r500-b:#9db8e8;
+  --r100:#885200; --r100-bg:#fff7e0; --r100-b:#d4b040;
+  --r0:#5a5f78; --r0-bg:#f2f3f8; --r0-b:#c0c4d8;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 18px;
+  line-height: 1.55;
+  padding: 24px 18px 60px;
+}
+
+.page-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ── HEADER ── */
+.hdr {
+  display:flex; justify-content:space-between; align-items:flex-end;
+  flex-wrap:wrap; gap:10px;
+  margin-bottom:28px; padding-bottom:18px;
+  border-bottom:2px solid var(--border);
+}
+h1 { font-family:'Syne',sans-serif; font-weight:800; font-size:2.2rem; letter-spacing:-0.02em; }
+.hdr-sub { font-family:'DM Mono',monospace; font-size:0.9rem; color:var(--muted); margin-top:5px; }
+.hdr-meta { font-family:'DM Mono',monospace; font-size:0.88rem; color:var(--muted); text-align:right; }
+
+/* ── SECTION ── */
+.section {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px;
+  margin-bottom: 28px;
+}
+
+.sec-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 1.5rem;
+  margin-bottom: 8px;
+}
+
+.sec-sub {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.95rem;
+  color: var(--muted);
+  margin-bottom: 26px;
+}
+
+/* ── PIPELINE BAR ── */
+.pipe-bar {
+  display: flex;
+  height: 90px;
+  border-radius: 10px;
+  overflow: visible;
+  gap: 3px;
+  margin-bottom: 56px;
+  position: relative;
+}
+
+.pipe-seg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  cursor: pointer;
+  position: relative;
+  transition: opacity 0.15s, transform 0.12s;
+  min-width: 40px;
+  border: 2px solid;
+}
+
+.pipe-seg:hover { opacity: 0.9; transform: scaleY(1.04); }
+
+.pipe-seg-num {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.pipe-seg-icon { font-size: 0.9rem; margin-bottom: 1px; }
+
+.pipe-seg-range {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.82rem;
+  font-weight: 600;
+  opacity: 0.88;
+  margin-top: 3px;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.pipe-seg-label {
+  position: absolute;
+  bottom: -28px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.85rem;
+  color: var(--muted);
+  white-space: nowrap;
+  text-align: center;
+  font-weight: 500;
+}
+
+.pipe-seg-amount {
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--muted);
+  white-space: nowrap;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  padding: 0 4px;
+  text-align: center;
+}
+
+/* ── TOOLTIP ── */
+.tooltip {
+  display: none;
+  position: absolute;
+  top: calc(100% + 30px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text);
+  color: #fff;
+  border-radius: 8px;
+  padding: 10px 14px;
+  z-index: 100;
+  width: max-content;
+  max-width: 460px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+  pointer-events: none;
+}
+
+.tooltip::before {
+  content:'';
+  position:absolute;
+  top:-7px; left:50%; transform:translateX(-50%);
+  border-left:8px solid transparent;
+  border-right:8px solid transparent;
+  border-bottom:8px solid var(--text);
+}
+
+.pipe-seg:hover .tooltip { display: block; }
+
+.tt-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.6;
+  margin-bottom: 7px;
+}
+
+.tt-item {
+  font-size: 1rem;
+  line-height: 1.6;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding: 3px 0;
+}
+
+.tt-item:last-child { border-bottom: none; }
+.tt-item-name { font-weight: 500; }
+.tt-item-rev { opacity: 0.65; font-family: 'DM Mono', monospace; font-size: 0.9rem; flex-shrink:0; }
+
+/* ── TABLE ── */
+.tbl-wrap {
+  overflow-x: auto;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  margin-top: 16px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+thead tr { background: #f0f2f8; border-bottom: 2px solid var(--border); }
+
+th {
+  padding: 14px 16px;
+  text-align: left;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  white-space: nowrap;
+}
+
+tbody tr { border-bottom: 1px solid var(--border); }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:nth-child(even) { background: #f9fafd; }
+tbody tr:hover { background: #eef0f8; }
+
+.tbl-group-row td {
+  background: #f0f2f8;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+td { padding: 16px 16px; vertical-align: top; }
+
+.td-client { font-weight: 600; color: var(--text); min-width: 160px; font-size:1.05rem; }
+.td-params { color: var(--muted); font-size: 0.95rem; max-width: 220px; line-height:1.5; }
+.td-note   { color: var(--muted); font-size: 0.95rem; max-width: 240px; line-height:1.5; }
+.td-mono   { font-family: 'DM Mono', monospace; font-size: 0.95rem; white-space: nowrap; }
+
+/* Status pill */
+.spill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 6px 12px; border-radius: 5px;
+  font-family: 'DM Mono', monospace; font-size: 0.9rem; font-weight: 500;
+  border: 1.5px solid; white-space: nowrap;
+}
+.sp-wip  { background:var(--wip-bg);  color:var(--wip);  border-color:var(--wip-b); }
+.sp-todo { background:var(--todo-bg); color:var(--todo); border-color:var(--todo-b); }
+.sp-done { background:var(--done-bg); color:var(--done); border-color:var(--done-b); }
+.sp-lost { background:var(--lost-bg); color:var(--lost); border-color:var(--lost-b); }
+.sp-out  { background:var(--out-bg);  color:var(--out);  border-color:var(--out-b); }
+
+/* Revenue pill */
+.rpill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 12px; border-radius: 5px;
+  font-family: 'DM Mono', monospace; font-size: 0.9rem; font-weight: 500;
+  border: 1.5px solid; white-space: nowrap;
+}
+.rp-1m  { background:var(--r1m-bg);  color:var(--r1m);  border-color:var(--r1m-b); }
+.rp-500 { background:var(--r500-bg); color:var(--r500); border-color:var(--r500-b); }
+.rp-100 { background:var(--r100-bg); color:var(--r100); border-color:var(--r100-b); }
+.rp-0   { background:var(--r0-bg);   color:var(--r0);   border-color:var(--r0-b); }
+
+/* Deadline */
+.dl-urgent { color:#a82318; font-weight:700; font-size:1rem; }
+.dl-soon   { color:#885200; font-weight:600; font-size:1rem; }
+
+
+
+.divider-line {
+  border: none;
+  border-top: 2px solid var(--border);
+  margin: 24px 0;
+}
+
+@media (max-width: 768px) {
+  body { font-size: 14px; padding: 14px 10px 40px; }
+  h1 { font-size: 1.4rem; }
+  .hdr { flex-direction: column; align-items: flex-start; }
+  .hdr-meta { text-align: left; }
+  .pipe-bar { height: 70px; margin-bottom: 44px; }
+  .pipe-seg-num { font-size: 1.3rem; }
+  .pipe-seg-range { font-size: 0.65rem; }
+  .pipe-seg-label { font-size: 0.65rem; bottom: -22px; }
+  .section { padding: 16px 12px; }
+  .sec-title { font-size: 1.1rem; }
+  .sec-sub { font-size: 0.78rem; }
+  .tbl-wrap { font-size: 0.78rem; }
+  td { padding: 10px 8px; }
+  th { padding: 8px; font-size: 0.65rem; }
+  .spill, .rpill { font-size: 0.7rem; padding: 4px 7px; }
+  .td-client { font-size: 0.88rem; min-width: 100px; }
+  .td-params, .td-note { font-size: 0.78rem; }
+  .td-mono { font-size: 0.78rem; }
+  .tbl-group-row td { font-size: 0.72rem; }
+  .tooltip { max-width: 260px; }
+  .tt-item { font-size: 0.82rem; }
+}
+
+@media (max-width: 480px) {
+  body { font-size: 13px; }
+  .pipe-bar { height: 60px; }
+  .pipe-seg-num { font-size: 1.1rem; }
+  /* Hide less important columns on very small screens */
+  th:nth-child(3), td:nth-child(3),
+  th:nth-child(6), td:nth-child(6) { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+<div class="hdr">
+  <div>
+    <h1>Sales Pipeline</h1>
+    <div class="hdr-sub">BI-KA Logisztika · 2026 Q1–Q2</div>
+  </div>
+  <div class="hdr-meta">
+    <div>Frissítve: 2026.04.24</div>
+    <div style="margin-top:2px">Csontos Gábor</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     PIPELINE 1 — SZAKASZOK
+══════════════════════════════ -->
+<div class="section">
+  <div class="sec-title">Pipeline szakaszok szerint</div>
+  <div class="sec-sub">Hover: tételek megtekintése · Összeg = potenciális éves forgalom becsült sávja</div>
+
+  <div class="pipe-bar" id="stage-bar"></div>
+<div class="tbl-wrap" style="margin-top:16px">
+    <table id="stage-table">
+      <thead>
+        <tr>
+          <th>Megbízó</th>
+          <th>Státusz</th>
+          <th>Főbb paraméterek</th>
+          <th>Forgalom/év</th>
+          <th>Határidő</th>
+          <th>Megjegyzés</th>
+        </tr>
+      </thead>
+      <tbody id="stage-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     PIPELINE 2 — ÖSSZEGEK
+══════════════════════════════ -->
+<div class="section">
+  <div class="sec-title">Pipeline összeg szerint</div>
+  <div class="sec-sub">Hover: tételek megtekintése · Méret arányos a tétel darabszámmal</div>
+
+  <div class="pipe-bar" id="rev-bar"></div>
+<div class="tbl-wrap" style="margin-top:16px">
+    <table id="rev-table">
+      <thead>
+        <tr>
+          <th>Megbízó</th>
+          <th>Forgalom/év</th>
+          <th>Státusz</th>
+          <th>Főbb paraméterek</th>
+          <th>Határidő</th>
+          <th>Megjegyzés</th>
+        </tr>
+      </thead>
+      <tbody id="rev-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// ── DATA ──
+const deals = [
+  { client:"Velux CEE tender",         params:"",                                                        status:"wip",  rev:"1m",  deadline:"márc. 30.", dc:"urgent", note:"Első kör benyújtva, nem hivatalos 2. kör benyújtása" },
+  { client:"Sick Kft.",                params:"Napi 1 indítás import/export · HU–DE",                   status:"out",  rev:"500", deadline:"ápr. 1.",   dc:"",       note:"Fix járatokkal, 40t-re módosítva" },
+  { client:"Allison Off Highway",       params:"Csomagolóanyag, göngyöleg, belső anyagmozgatás, raktár", status:"wip",  rev:"500", deadline:"máj. 31.",  dc:"",       note:"Projektterv 2026.05.31-ig" },
+  { client:"ViPulse Technology Kft.",  params:"Inbound, outbound, gyártáskiszolgálás",                  status:"wip",  rev:"500", deadline:"ápr. 3.",   dc:"soon",   note:"Agility-t váltani akarják" },
+  { client:"Grosse Vehne",             params:"RESRG–BMW szállítás",                                    status:"wip",  rev:"100", deadline:"ápr. 24.",  dc:"",       note:"Fix körfuvar, napi 3 rakodásra" },
+  { client:"DM Boltfelújítás",         params:"Raktár + szállítmányozás",                               status:"wip",  rev:"100", deadline:"ápr. 10.",  dc:"soon",   note:"" },
+  { client:"DM",                       params:"Karácsonyi csomag",                                      status:"todo", rev:"0",   deadline:"máj. 31.",  dc:"",       note:"" },
+  { client:"Auchan bolti ellátás",     params:"Bolti ellátás",                                          status:"wip",  rev:"100", deadline:"márc. 31.", dc:"urgent", note:"Standard szállítmányozás + HACCP markup · COOP benchmarking" },
+  { client:"ThyssenKrupp FY26",        params:"Közút",                                                  status:"wip",  rev:"100", deadline:"márc. 31.", dc:"urgent", note:"" },
+  { client:"Sonoco Nagykörős",         params:"",                                                        status:"wip",  rev:"500", deadline:"ápr. 24.",  dc:"",       note:"Második kör leadva" },
+  { client:"Roto Elzett",              params:"Török viszonylat",                                       status:"wip",  rev:"0",   deadline:"márc. 31.", dc:"urgent", note:"" },
+  { client:"Lear",                     params:"6 csomag · 3 HU kötődésű",                              status:"wip",  rev:"100", deadline:"—",          dc:"",       note:"" },
+  { client:"Apollo Tyres",             params:"Fuvarozás (közút, konténer)",                            status:"todo", rev:"1m",  deadline:"2025. nov. 21.", dc:"", note:"Beminősítés ok · Első kör viszonylatok 2026.03.31" },
+  { client:"Bridgestone EMEA tender",  params:"FTL EMEA",                                               status:"todo", rev:"1m",  deadline:"máj. 17.",  dc:"",       note:"Üzemanyag miatt eltolják · Kérnek be revíziót" },
+  { client:"Samsung Jászfényszaru",    params:"SK + HU lokációk",                                       status:"todo", rev:"500", deadline:"ápr. 3.",   dc:"soon",   note:"On-hold az üzemanyag miatt" },
+  { client:"Partner in Pet Food",      params:"Raktár + transport · HU+SK",                             status:"todo", rev:"1m",  deadline:"ápr. 30.",  dc:"",       note:"Feldolgozni a beérkező kiírást" },
+  { client:"MAM Hungária",             params:"Export, import, közút, tengeri · Vámszolgáltatás",       status:"todo", rev:"500", deadline:"ápr. 30.",  dc:"",       note:"Légi nem fókusz · Klauzuális forma" },
+  { client:"Vulcan Shield Global",     params:"Új gyár építése, telepítése",                            status:"todo", rev:"100", deadline:"ápr. 3.",   dc:"soon",   note:"Teams egyeztetés 2026.04.10" },
+  { client:"Körber Hungária",          params:"Napi 8 rakodás, spedíció · Fix viszonylat",              status:"todo", rev:"500", deadline:"máj. 22.",  dc:"",       note:"Kivonat készítése és árazás" },
+  { client:"Glovis",                    params:"Untertürkheim–Kecskemét",                                status:"todo", rev:"500", deadline:"ápr. 30.",  dc:"",       note:"" },
+  { client:"SwissKrono",               params:"",                                                        status:"done", rev:"0",   deadline:"2025. febr. 27.", dc:"", note:"Első díj alapján továbbjutottunk" },
+  { client:"Samsung SDS Volta",        params:"",                                                        status:"done", rev:"0",   deadline:"—",          dc:"",       note:"Tenderen kívüli árazással megkerestek" },
+  { client:"Silkem",                   params:"",                                                        status:"done", rev:"100", deadline:"febr. 10.", dc:"",       note:"Nyert viszonylatok" },
+  { client:"Hajdu Autó",               params:"",                                                        status:"lost", rev:"100", deadline:"febr. 14.", dc:"",       note:"" },
+  { client:"Petruzalek",               params:"Belföldi disztribúció",                                  status:"lost", rev:"0",   deadline:"márc. 14.", dc:"",       note:"" },
+  { client:"Diego",                    params:"Bolti ellátás",                                           status:"out",  rev:"500", deadline:"febr. 13.", dc:"",       note:"Helyi bejáratott vállalkozó · Nem vállalható feltételek" },
+  { client:"Profirent",                params:"Túlméretes szállítások",                                 status:"out",  rev:"500", deadline:"ápr. 1.",   dc:"",       note:"" },
+];
+
+const stageConf = [
+  { key:"wip",  label:"🛠️ Folyamatban", bg:"var(--wip-bg)",  col:"var(--wip)",  border:"var(--wip-b)",  pillCls:"sp-wip" },
+  { key:"todo", label:"✏️ Teendő",       bg:"var(--todo-bg)", col:"var(--todo)", border:"var(--todo-b)", pillCls:"sp-todo" },
+  { key:"done", label:"✅ Kész / Nyert", bg:"var(--done-bg)", col:"var(--done)", border:"var(--done-b)", pillCls:"sp-done" },
+  { key:"lost", label:"⛔ Nem nyert",    bg:"var(--lost-bg)", col:"var(--lost)", border:"var(--lost-b)", pillCls:"sp-lost" },
+  { key:"out",  label:"🚮 Nem indultunk",bg:"var(--out-bg)",  col:"var(--out)",  border:"var(--out-b)",  pillCls:"sp-out" },
+];
+
+const revConf = [
+  { key:"1m",  label:"1M+ EUR",      bg:"var(--r1m-bg)",  col:"var(--r1m)",  border:"var(--r1m-b)",  pillCls:"rp-1m" },
+  { key:"500", label:"500k–1M EUR",  bg:"var(--r500-bg)", col:"var(--r500)", border:"var(--r500-b)", pillCls:"rp-500" },
+  { key:"100", label:"100k–500k EUR",bg:"var(--r100-bg)", col:"var(--r100)", border:"var(--r100-b)", pillCls:"rp-100" },
+  { key:"0",   label:"0–100k EUR",   bg:"var(--r0-bg)",   col:"var(--r0)",   border:"var(--r0-b)",   pillCls:"rp-0" },
+];
+
+// Revenue midpoints for display
+const revMid = { "1m":"1M+", "500":"500k–1M", "100":"100k–500k", "0":"0–100k" };
+
+// Revenue range calculation (min–max EUR)
+const revLow  = { "1m":1000000, "500":500000, "100":100000, "0":0 };
+const revHigh = { "1m":2000000, "500":1000000, "100":500000, "0":100000 };
+
+function calcRange(items) {
+  if (!items.length) return '';
+  const low  = items.reduce((s, d) => s + revLow[d.rev],  0);
+  const high = items.reduce((s, d) => s + revHigh[d.rev], 0);
+  const fmt = v => v >= 1000000
+    ? (v/1000000).toFixed(v%1000000===0?0:1).replace(/\.0$/,'') + 'M'
+    : (v/1000).toFixed(0) + 'k';
+  return fmt(low) + ' – ' + fmt(high) + ' EUR';
+}
+
+// ── Revenue summary per stage ──
+function revSummary(items) {
+  const counts = {};
+  items.forEach(d => { counts[d.rev] = (counts[d.rev]||0)+1; });
+  return revConf
+    .filter(r => counts[r.key])
+    .map(r => `${counts[r.key]}× ${r.label}`)
+    .join(' · ');
+}
+
+// ── Build stage bar ──
+function buildStageBar() {
+  const bar = document.getElementById('stage-bar');
+  const total = deals.length;
+  stageConf.forEach(st => {
+    const items = deals.filter(d => d.status === st.key);
+    if (!items.length) return;
+    const flex = items.length;
+    const seg = document.createElement('div');
+    seg.className = 'pipe-seg';
+    seg.style.cssText = `flex:${flex}; background:${st.bg}; color:${st.col}; border-color:${st.border};`;
+
+    const ttItems = items.map(d =>
+      `<div class="tt-item"><span class="tt-item-name">${d.client}</span><span class="tt-item-rev">${revMid[d.rev]} EUR</span></div>`
+    ).join('');
+
+    const range = calcRange(items);
+    seg.innerHTML = `
+      <div class="pipe-seg-icon">${st.label.split(' ')[0]}</div>
+      <div class="pipe-seg-num">${items.length}</div>
+      <div class="pipe-seg-range">${range}</div>
+      <div class="pipe-seg-label">${st.label.replace(/^[\S]+ /,'')}</div>
+      <div class="tooltip">
+        <div class="tt-title">${st.label} — ${items.length} tétel · ${range}</div>
+        ${ttItems}
+      </div>
+    `;
+    bar.appendChild(seg);
+  });
+}
+
+// ── Build revenue bar ──
+function buildRevBar() {
+  const bar = document.getElementById('rev-bar');
+  revConf.forEach(rv => {
+    const items = deals.filter(d => d.rev === rv.key);
+    if (!items.length) return;
+    const seg = document.createElement('div');
+    seg.className = 'pipe-seg';
+    seg.style.cssText = `flex:${items.length}; background:${rv.bg}; color:${rv.col}; border-color:${rv.border};`;
+
+    const statusSummary = stageConf
+      .filter(s => items.some(d => d.status === s.key))
+      .map(s => {
+        const cnt = items.filter(d => d.status === s.key).length;
+        return `${s.label.split(' ')[0]}${cnt}`;
+      }).join(' ');
+
+    const ttItems = items.map(d =>
+      `<div class="tt-item"><span class="tt-item-name">${d.client}</span><span class="tt-item-rev">${stageConf.find(s=>s.key===d.status).label.split(' ')[0]}</span></div>`
+    ).join('');
+
+    const rvRange = calcRange(items);
+    seg.innerHTML = `
+      <div class="pipe-seg-num">${items.length}</div>
+      <div class="pipe-seg-range">${rvRange}</div>
+      <div class="pipe-seg-label">${rv.label}</div>
+      <div class="tooltip">
+        <div class="tt-title">${rv.label} — ${items.length} tétel · ${rvRange}</div>
+        ${ttItems}
+      </div>
+    `;
+    bar.appendChild(seg);
+  });
+}
+
+// ── Build stage table ──
+function buildStageTable() {
+  const tbody = document.getElementById('stage-tbody');
+  stageConf.forEach(st => {
+    const items = deals.filter(d => d.status === st.key);
+    if (!items.length) return;
+    // Group header
+    const gr = document.createElement('tr');
+    gr.className = 'tbl-group-row';
+    gr.innerHTML = `<td colspan="6">${st.label} — ${items.length} tétel</td>`;
+    tbody.appendChild(gr);
+    // Items
+    items.forEach(d => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="td-client">${d.client}</td>
+        <td><span class="spill ${st.pillCls}">${st.label}</span></td>
+        <td class="td-params">${d.params || '—'}</td>
+        <td class="td-mono"><span class="rpill ${revConf.find(r=>r.key===d.rev).pillCls}">${revMid[d.rev]} EUR</span></td>
+        <td class="td-mono ${d.dc}">${d.deadline}</td>
+        <td class="td-note">${d.note || ''}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  });
+}
+
+// ── Build revenue table ──
+function buildRevTable() {
+  const tbody = document.getElementById('rev-tbody');
+  revConf.forEach(rv => {
+    const items = deals.filter(d => d.rev === rv.key);
+    if (!items.length) return;
+    const gr = document.createElement('tr');
+    gr.className = 'tbl-group-row';
+    gr.innerHTML = `<td colspan="6">${rv.label} — ${items.length} tétel</td>`;
+    tbody.appendChild(gr);
+    items.forEach(d => {
+      const st = stageConf.find(s => s.key === d.status);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="td-client">${d.client}</td>
+        <td class="td-mono"><span class="rpill ${rv.pillCls}">${rv.label}</span></td>
+        <td><span class="spill ${st.pillCls}">${st.label}</span></td>
+        <td class="td-params">${d.params || '—'}</td>
+        <td class="td-mono ${d.dc}">${d.deadline}</td>
+        <td class="td-note">${d.note || ''}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  });
+}
+
+// ── Copy table as markdown for Loop ──
+function copyTable(tableId, btn) {
+  const table = document.getElementById(tableId);
+  const rows = Array.from(table.querySelectorAll('tr'));
+  const lines = [];
+  let headerDone = false;
+
+  rows.forEach(row => {
+    if (row.classList.contains('tbl-group-row')) {
+      lines.push('');
+      lines.push('**' + row.textContent.trim() + '**');
+      return;
+    }
+    const cells = Array.from(row.querySelectorAll('th, td'));
+    const vals = cells.map(c => c.textContent.trim().replace(/\n+/g, ' ').replace(/\s+/g, ' '));
+    const line = '| ' + vals.join(' | ') + ' |';
+    lines.push(line);
+    if (!headerDone && row.closest('thead')) {
+      lines.push('| ' + vals.map(() => '---').join(' | ') + ' |');
+      headerDone = true;
+    }
+  });
+
+  const text = lines.join('\n');
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✅ Vágólapra másolva!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = btn.id === 'btn-stage' ? '📋 Másolás Loop-ba (Szakasz)' : '📋 Másolás Loop-ba (Összeg)';
+      btn.classList.remove('copied');
+    }, 2200);
+  });
+}
+
+// ── INIT ──
+buildStageBar();
+buildRevBar();
+buildStageTable();
+buildRevTable();
+</script>
+</div><!-- /page-wrap -->
+</body>
+</html>
